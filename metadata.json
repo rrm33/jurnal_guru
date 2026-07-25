@@ -1,0 +1,6 @@
+{
+  "name": "Jurnal Guru RPL",
+  "description": "Sistem Jurnal Mengajar Guru RPL SMKN 6 Jember untuk pencatatan pembelajaran, kehadiran siswa, pemberian materi, tugas, progres perkembangan, rekap nilai akhir, dan pemantauan kedisiplinan siswa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
