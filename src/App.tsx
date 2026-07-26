@@ -575,7 +575,7 @@ export default function App() {
               <GraduationCap size={22} />
             </div>
             <div>
-              <h1 className="font-bold text-sm tracking-tight sm:text-base text-natural-dark">Jurnal Mengajar Guru</h1>
+              <h1 className="font-bold text-sm tracking-tight sm:text-base text-natural-dark">Jurnal Mapel RPL</h1>
               <p className="text-[10px] text-natural-sage font-semibold tracking-wide font-mono">SMKN 6 JEMBER • RPL</p>
             </div>
           </div>
