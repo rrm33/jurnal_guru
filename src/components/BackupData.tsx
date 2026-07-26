@@ -1,5 +1,5 @@
-import React, { useRef } from "react";
-import { Download, Upload, RotateCcw, HelpCircle, HardDrive, ShieldCheck } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
+import { Download, Upload, RotateCcw, HelpCircle, HardDrive, ShieldCheck, Database, CheckCircle2, XCircle, RefreshCw, Server } from "lucide-react";
 
 interface BackupDataProps {
   onExport: () => void;
@@ -13,6 +13,49 @@ export default function BackupData({
   onReset
 }: BackupDataProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dbStatus, setDbStatus] = useState<"checking" | "connected" | "disconnected">("checking");
+  const [dbConfig, setDbConfig] = useState<{ host?: string; database?: string; user?: string }>({});
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [initMessage, setInitMessage] = useState<string | null>(null);
+
+  const checkDbHealth = async () => {
+    setDbStatus("checking");
+    try {
+      const res = await fetch("/api/health");
+      if (res.ok) {
+        const data = await res.json();
+        setDbStatus(data.database === "connected" ? "connected" : "disconnected");
+        setDbConfig(data.config || {});
+      } else {
+        setDbStatus("disconnected");
+      }
+    } catch {
+      setDbStatus("disconnected");
+    }
+  };
+
+  useEffect(() => {
+    checkDbHealth();
+  }, []);
+
+  const handleInitDb = async () => {
+    setIsInitializing(true);
+    setInitMessage(null);
+    try {
+      const res = await fetch("/api/init-db", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setInitMessage("✅ Tabel MySQL berhasil dibuat dan disinkronkan!");
+        checkDbHealth();
+      } else {
+        setInitMessage(`❌ Gagal: ${data.error || "Gagal menginisialisasi MySQL"}`);
+      }
+    } catch (err: any) {
+      setInitMessage(`❌ Error koneksi: ${err.message}`);
+    } finally {
+      setIsInitializing(false);
+    }
+  };
 
   const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -23,7 +66,6 @@ export default function BackupData({
       const result = event.target?.result;
       if (typeof result === "string") {
         try {
-          // Quick validation parse
           const parsed = JSON.parse(result);
           if (parsed.students && parsed.lessonPlans && parsed.attendance) {
             onImport(result);
@@ -38,7 +80,6 @@ export default function BackupData({
     };
     reader.readAsText(file);
     
-    // Clear input so it triggers onChange even for same file
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -51,14 +92,86 @@ export default function BackupData({
   return (
     <div id="backup-root" className="space-y-6">
       {/* Title */}
-      <div className="bg-white p-5 rounded-2xl border border-natural-border shadow-xs flex items-center gap-3">
-        <div className="bg-natural-accent text-natural-mid p-2 rounded-xl border border-natural-border/50">
-          <HardDrive size={20} />
+      <div className="bg-white p-5 rounded-2xl border border-natural-border shadow-xs flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-natural-accent text-natural-mid p-2 rounded-xl border border-natural-border/50">
+            <HardDrive size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-natural-dark text-base">Manajemen Database & Cadangan Data</h3>
+            <p className="text-slate-400 text-xs">Aplikasi kini mendukung penyimpanan Database MySQL dan cadangan lokal JSON.</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-bold text-natural-dark text-base">Manajemen Cadangan & Ekspor Data</h3>
-          <p className="text-slate-400 text-xs">Simpan, pulihkan, dan amankan seluruh data jurnal pembelajaran Anda tanpa butuh server database terpisah.</p>
+
+        {/* DB Connection Badge */}
+        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+          <Database size={16} className="text-slate-600" />
+          <span className="text-xs font-semibold text-slate-700">MySQL Status:</span>
+          {dbStatus === "checking" && (
+            <span className="text-xs text-amber-600 flex items-center gap-1 font-medium">
+              <RefreshCw size={12} className="animate-spin" /> Memeriksa...
+            </span>
+          )}
+          {dbStatus === "connected" && (
+            <span className="text-xs text-emerald-600 flex items-center gap-1 font-bold">
+              <CheckCircle2 size={14} /> Terhubung ({dbConfig.database || "MySQL"})
+            </span>
+          )}
+          {dbStatus === "disconnected" && (
+            <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+              <XCircle size={14} className="text-slate-400" /> Mode Lokal (LocalStorage)
+            </span>
+          )}
+          <button 
+            type="button"
+            onClick={checkDbHealth} 
+            className="ml-1 p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors cursor-pointer"
+            title="Cek Ulang Koneksi"
+          >
+            <RefreshCw size={12} />
+          </button>
         </div>
+      </div>
+
+      {/* MySQL Control Box */}
+      <div className="bg-white p-5 rounded-2xl border border-natural-border shadow-2xs space-y-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h4 className="font-bold text-natural-dark text-sm flex items-center gap-2">
+              <Server size={18} className="text-emerald-600" /> Pengaturan Database MySQL (cPanel / Arenhost)
+            </h4>
+            <p className="text-slate-500 text-xs leading-relaxed mt-1">
+              Data disimpan secara otomatis ke database MySQL jika variabel koneksi di file <code className="bg-slate-100 px-1 py-0.5 rounded text-emerald-800 font-mono text-[11px]">.env</code> sudah dikonfigurasi pada cPanel Node.js Selector.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleInitDb}
+              disabled={isInitializing}
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer transition-colors flex items-center gap-1.5 shadow-2xs"
+            >
+              {isInitializing ? (
+                <>
+                  <RefreshCw size={14} className="animate-spin" />
+                  Menginisialisasi...
+                </>
+              ) : (
+                <>
+                  <Database size={14} />
+                  Buat / Verifikasi Tabel MySQL
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {initMessage && (
+          <div className="text-xs p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono font-medium">
+            {initMessage}
+          </div>
+        )}
       </div>
 
       {/* Backup Actions Layout */}
@@ -68,7 +181,7 @@ export default function BackupData({
         <div className="bg-white p-5 rounded-2xl border border-natural-border shadow-2xs flex flex-col justify-between space-y-4">
           <div className="space-y-2">
             <h4 className="font-bold text-natural-dark text-sm flex items-center gap-2">
-              <Download size={16} className="text-natural-mid" /> Ekspor Basis Data
+              <Download size={16} className="text-natural-mid" /> Ekspor Basis Data JSON
             </h4>
             <p className="text-slate-500 text-xs leading-relaxed">
               Unduh seluruh entri Anda (RPP, presensi harian, materi, nilai kuis, log sikap) dalam format berkas tunggal JSON yang ringkas. Simpan di komputer atau flashdisk sebagai cadangan berkala.
@@ -87,10 +200,10 @@ export default function BackupData({
         <div className="bg-white p-5 rounded-2xl border border-natural-border shadow-2xs flex flex-col justify-between space-y-4">
           <div className="space-y-2">
             <h4 className="font-bold text-natural-dark text-sm flex items-center gap-2">
-              <Upload size={16} className="text-natural-mid" /> Impor Basis Data
+              <Upload size={16} className="text-natural-mid" /> Impor Basis Data JSON
             </h4>
             <p className="text-slate-500 text-xs leading-relaxed">
-              Unggah file backup `.json` yang telah Anda unduh sebelumnya untuk memulihkan seluruh data pembelajaran. Tindakan ini akan menimpa data yang ada di browser saat ini.
+              Unggah file backup `.json` yang telah Anda unduh sebelumnya untuk memulihkan seluruh data pembelajaran.
             </p>
           </div>
           <input
@@ -116,7 +229,7 @@ export default function BackupData({
               <RotateCcw size={16} /> Setel Ulang Pabrik
             </h4>
             <p className="text-slate-500 text-xs leading-relaxed">
-              Bersihkan seluruh modifikasi pribadi Anda dan kembalikan struktur data ke kondisi bawaan (template kelas RPL SMKN 6 Jember). Gunakan jika ingin mencoba simulasi dari awal lagi.
+              Bersihkan seluruh modifikasi pribadi Anda dan kembalikan struktur data ke kondisi bawaan (template kelas RPL SMKN 6 Jember).
             </p>
           </div>
           <button
@@ -134,43 +247,43 @@ export default function BackupData({
         </div>
       </div>
 
-      {/* Guide Card for Shared Hosting Upload */}
+      {/* Guide Card for MySQL Hosting Setup */}
       <div className="bg-[#2C3E2D] p-6 rounded-2xl text-white space-y-4 shadow-md">
         <h4 className="font-bold text-sm flex items-center gap-2 text-[#E8EDDF]">
-          <ShieldCheck size={18} className="text-[#8DA47E]" /> Panduan Hosting di Hostinger / Shared Hosting Lainnya
+          <ShieldCheck size={18} className="text-[#8DA47E]" /> Cara Menghubungkan MySQL di cPanel / Arenhost
         </h4>
         
         <p className="text-slate-200 text-xs leading-relaxed">
-          Aplikasi Jurnal Guru ini dirancang dengan pendekatan <strong>Static Single-Page Application (SPA)</strong> yang handal dengan penyimpanan klien terenkripsi. Keuntungan utama dari metode ini adalah <u>Anda tidak membutuhkan MySQL atau PHP backend yang rumit</u> untuk menjalankannya secara daring.
+          Berikut langkah singkat mengaktifkan MySQL di hosting cPanel / Arenhost Anda:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs">
           <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-            <p className="font-bold text-[#E8EDDF] font-mono text-[10px] uppercase mb-1">Langkah 1: Kompilasi</p>
+            <p className="font-bold text-[#E8EDDF] font-mono text-[10px] uppercase mb-1">1. Buat Database MySQL</p>
             <p className="text-slate-200 leading-normal">
-              Jalankan perintah pembangunan aplikasi di komputer lokal Anda: <br />
-              <code className="bg-slate-900/60 px-1.5 py-0.5 rounded font-mono text-[10px] text-white mt-1.5 inline-block">npm run build</code>
+              Masuk ke cPanel ➔ menu <strong>MySQL® Databases</strong>. Buat database baru (misal: <code className="text-[#E8EDDF]">bisnisum_jurnal_guru</code>) dan user MySQL, lalu hubungkan dengan hak akses penuh (All Privileges).
             </p>
           </div>
 
           <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-            <p className="font-bold text-[#E8EDDF] font-mono text-[10px] uppercase mb-1">Langkah 2: Ambil Output</p>
+            <p className="font-bold text-[#E8EDDF] font-mono text-[10px] uppercase mb-1">2. Import schema.sql</p>
             <p className="text-slate-200 leading-normal">
-              Buka direktori projek Anda, temukan folder bernama <strong><code className="text-[#E8EDDF]">dist/</code></strong>. Folder ini berisi file terkompresi HTML, CSS, dan JS yang siap disajikan secara global.
+              Buka menu <strong>phpMyAdmin</strong> di cPanel, pilih database Anda, klik tab <strong>Import</strong>, lalu pilih file <strong><code className="text-[#E8EDDF]">schema.sql</code></strong> yang ada di repository project ini.
             </p>
           </div>
 
           <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-            <p className="font-bold text-[#E8EDDF] font-mono text-[10px] uppercase mb-1">Langkah 3: Unggah</p>
+            <p className="font-bold text-[#E8EDDF] font-mono text-[10px] uppercase mb-1">3. Atur .env di Hosting</p>
             <p className="text-slate-200 leading-normal">
-              Masuk ke hPanel Hostinger / cPanel Anda, buka File Manager, lalu seret dan unggah seluruh isi folder <strong>dist</strong> tadi langsung ke dalam folder <strong><code className="text-[#E8EDDF]">public_html</code></strong>. Selesai!
+              Buka File Manager di cPanel, buat file <strong>.env</strong> di dalam folder project Anda, lalu masukkan kredensial MySQL: <br />
+              <code className="text-[10px] font-mono text-emerald-300 block mt-1">DB_HOST=localhost<br />DB_USER=user_anda<br />DB_PASSWORD=password_anda<br />DB_NAME=db_anda</code>
             </p>
           </div>
         </div>
 
-        <div className="bg-white/5 px-4.5 py-3 rounded-xl border border-white/10 text-[11px] leading-relaxed text-slate-200 italic flex items-center gap-2">
+        <div className="bg-white/5 px-4.5 py-3 rounded-xl border border-white/10 text-[11px] leading-relaxed text-slate-200 flex items-center gap-2">
           <HelpCircle size={16} className="text-[#8DA47E] shrink-0" />
-          <span>Keamanan Data Terjamin: Karena seluruh data disimpan langsung di browser guru (atau diimpor/ekspor secara sadar via JSON), tidak ada risiko kebocoran database pusat dari server luar.</span>
+          <span>Jika MySQL belum diatur di server, aplikasi tetap berjalan lancar menggunakan mode penyimpanan lokal (LocalStorage browser).</span>
         </div>
       </div>
     </div>

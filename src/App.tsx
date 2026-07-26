@@ -44,6 +44,7 @@ import {
   loadData,
   saveData
 } from "./data";
+import { fetchFromApiOrLocal } from "./lib/apiClient";
 
 // Components
 import Dashboard from "./components/Dashboard";
@@ -109,6 +110,43 @@ export default function App() {
   useEffect(() => { saveData("development_logs", developmentLogs); }, [developmentLogs]);
   useEffect(() => { saveData("discipline_logs", disciplineLogs); }, [disciplineLogs]);
   useEffect(() => { saveData("exam_grades", examGrades); }, [examGrades]);
+
+  // --- INITIAL MYSQL BACKEND SYNC ---
+  useEffect(() => {
+    async function loadFromBackend() {
+      try {
+        const profile = await fetchFromApiOrLocal("teacher-profile", "teacher_profile", DEFAULT_TEACHER_PROFILE);
+        if (profile) setTeacherProfile(profile);
+
+        const stds = await fetchFromApiOrLocal("students", "students", INITIAL_STUDENTS);
+        if (stds && stds.length > 0) setStudents(stds);
+
+        const lps = await fetchFromApiOrLocal("lesson-plans", "lesson_plans", INITIAL_LESSON_PLANS);
+        if (lps && lps.length > 0) setLessonPlans(lps);
+
+        const att = await fetchFromApiOrLocal("attendance", "attendance", INITIAL_ATTENDANCE);
+        if (att && att.length > 0) setAttendance(att);
+
+        const mats = await fetchFromApiOrLocal("materials", "materials", INITIAL_MATERIALS);
+        if (mats && mats.length > 0) setMaterials(mats);
+
+        const tsks = await fetchFromApiOrLocal("tasks", "tasks", INITIAL_TASKS);
+        if (tsks && tsks.length > 0) setTasks(tsks);
+
+        const subs = await fetchFromApiOrLocal("task-submissions", "task_submissions", INITIAL_TASK_SUBMISSIONS);
+        if (subs && subs.length > 0) setSubmissions(subs);
+
+        const devLogs = await fetchFromApiOrLocal("development-progress", "development_logs", INITIAL_DEVELOPMENT_PROGRESS);
+        if (devLogs && devLogs.length > 0) setDevelopmentLogs(devLogs);
+
+        const discLogs = await fetchFromApiOrLocal("discipline-logs", "discipline_logs", INITIAL_DISCIPLINE_LOGS);
+        if (discLogs && discLogs.length > 0) setDisciplineLogs(discLogs);
+      } catch (err) {
+        console.log("Using LocalStorage fallback mode");
+      }
+    }
+    loadFromBackend();
+  }, []);
 
   // --- USER ROLE STATES ---
   const [userRole, setUserRole] = useState<"guru" | "siswa">(() => {
