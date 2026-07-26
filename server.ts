@@ -5,7 +5,7 @@ import { getDbPool, isDbConnected } from "./src/db/mysql.ts";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -26,13 +26,10 @@ async function startServer() {
     });
   });
 
-  // Auto initialize MySQL tables if DB is connected
-  app.post("/api/init-db", async (req, res) => {
+  // Function to initialize MySQL tables automatically
+  async function initDbTables() {
     const pool = getDbPool();
-    if (!pool) {
-      return res.status(500).json({ error: "Koneksi database MySQL belum dikonfigurasi di file .env" });
-    }
-
+    if (!pool) return false;
     try {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS teacher_profile (
@@ -151,10 +148,21 @@ async function startServer() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
+      console.log("[MySQL] Tabel berhasil dibuat / terverifikasi!");
+      return true;
+    } catch (err) {
+      console.error("[MySQL] Gagal inisialisasi tabel:", err);
+      return false;
+    }
+  }
+
+  // Auto initialize MySQL tables endpoint (GET and POST supported)
+  app.all("/api/init-db", async (req, res) => {
+    const success = await initDbTables();
+    if (success) {
       res.json({ success: true, message: "Tabel MySQL berhasil dibuat/diverifikasi!" });
-    } catch (err: any) {
-      console.error("Error init-db:", err);
-      res.status(500).json({ error: err.message || "Gagal menginisialisasi tabel MySQL" });
+    } else {
+      res.status(500).json({ error: "Gagal menginisialisasi tabel MySQL. Pastikan database terhubung." });
     }
   });
 
@@ -496,8 +504,9 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", async () => {
     console.log(`Server Jurnal Guru running on http://0.0.0.0:${PORT}`);
+    await initDbTables();
   });
 }
 
