@@ -22,7 +22,8 @@ export default function BackupData({
     setDbStatus("checking");
     try {
       const res = await fetch("/api/health");
-      if (res.ok) {
+      const contentType = res.headers.get("content-type");
+      if (res.ok && contentType && contentType.includes("application/json")) {
         const data = await res.json();
         setDbStatus(data.database === "connected" ? "connected" : "disconnected");
         setDbConfig(data.config || {});
@@ -43,6 +44,14 @@ export default function BackupData({
     setInitMessage(null);
     try {
       const res = await fetch("/api/init-db", { method: "POST" });
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+          throw new Error("Server cPanel mengembalikan halaman HTML. Pastikan aplikasi Node.js sudah di-restart dan cPanel mengarahkan request /api ke Node.js (bukan index.html statis).");
+        }
+        throw new Error(`Server mengembalikan respon tidak valid (${res.status}): ${text.slice(0, 80)}`);
+      }
       const data = await res.json();
       if (res.ok && data.success) {
         setInitMessage("✅ Tabel MySQL berhasil dibuat dan disinkronkan!");
@@ -51,7 +60,7 @@ export default function BackupData({
         setInitMessage(`❌ Gagal: ${data.error || "Gagal menginisialisasi MySQL"}`);
       }
     } catch (err: any) {
-      setInitMessage(`❌ Error koneksi: ${err.message}`);
+      setInitMessage(`❌ Error: ${err.message}`);
     } finally {
       setIsInitializing(false);
     }

@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 import { createServer as createViteServer } from "vite";
@@ -491,15 +492,22 @@ async function startServer() {
     }
   });
 
+  // Catch-all for API routes so missing API calls return JSON 404 instead of index.html
+  app.all("/api/*", (req, res) => {
+    res.status(404).json({ error: `API route ${req.originalUrl} tidak ditemukan.` });
+  });
+
   // --- VITE MIDDLEWARE FOR DEV & STATIC SERVING FOR PROD ---
-  if (process.env.NODE_ENV !== "production") {
+  const distPath = path.join(process.cwd(), "dist");
+  const hasBuiltDist = fs.existsSync(path.join(distPath, "index.html"));
+
+  if (process.env.NODE_ENV === "development" && !hasBuiltDist) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
@@ -529,4 +537,6 @@ async function startServer() {
   }
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("Failed to start server Jurnal Guru:", err);
+});
