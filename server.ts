@@ -523,14 +523,21 @@ async function startServer() {
 
   // --- VITE MIDDLEWARE FOR DEV & STATIC SERVING FOR PROD ---
   const distPath = path.join(process.cwd(), "dist");
-  const hasBuiltDist = fs.existsSync(path.join(distPath, "index.html"));
 
-  if (process.env.NODE_ENV === "development" && !hasBuiltDist) {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (err) {
+      console.error("[Vite] Failed to start Vite middleware, falling back to static dist:", err);
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(distPath, "index.html"));
+      });
+    }
   } else {
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
