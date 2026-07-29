@@ -1,5 +1,7 @@
 import express from "express";
 import path from "path";
+import dotenv from "dotenv";
+dotenv.config();
 import { createServer as createViteServer } from "vite";
 import { getDbPool, isDbConnected } from "./src/db/mysql.ts";
 
@@ -504,10 +506,27 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", async () => {
-    console.log(`Server Jurnal Guru running on http://0.0.0.0:${PORT}`);
-    await initDbTables();
-  });
+  const isNumericPort = !isNaN(Number(PORT));
+  if (isNumericPort) {
+    app.listen(Number(PORT), "0.0.0.0", async () => {
+      console.log(`Server Jurnal Guru running on port ${PORT}`);
+      try {
+        await initDbTables();
+      } catch (err) {
+        console.error("Database init error:", err);
+      }
+    });
+  } else {
+    // Passenger socket path
+    app.listen(PORT, async () => {
+      console.log(`Server Jurnal Guru running on Passenger socket ${PORT}`);
+      try {
+        await initDbTables();
+      } catch (err) {
+        console.error("Database init error:", err);
+      }
+    });
+  }
 }
 
 startServer();
