@@ -15,11 +15,13 @@ export default function BackupData({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dbStatus, setDbStatus] = useState<"checking" | "connected" | "disconnected">("checking");
   const [dbConfig, setDbConfig] = useState<{ host?: string; database?: string; user?: string }>({});
+  const [dbError, setDbError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initMessage, setInitMessage] = useState<string | null>(null);
 
   const checkDbHealth = async () => {
     setDbStatus("checking");
+    setDbError(null);
     try {
       const res = await fetch("/api/health");
       const contentType = res.headers.get("content-type");
@@ -27,11 +29,16 @@ export default function BackupData({
         const data = await res.json();
         setDbStatus(data.database === "connected" ? "connected" : "disconnected");
         setDbConfig(data.config || {});
+        if (data.database !== "connected" && data.error) {
+          setDbError(data.error);
+        }
       } else {
         setDbStatus("disconnected");
+        setDbError("Endpoint /api/health mengembalikan halaman HTML/non-JSON.");
       }
-    } catch {
+    } catch (err: any) {
       setDbStatus("disconnected");
+      setDbError(err.message || "Gagal terhubung ke server backend.");
     }
   };
 
@@ -175,6 +182,15 @@ export default function BackupData({
             </button>
           </div>
         </div>
+
+        {dbError && (
+          <div className="text-xs p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-medium space-y-1">
+            <div className="font-bold flex items-center gap-1.5 text-amber-800">
+              <XCircle size={14} className="text-amber-600 shrink-0" /> Diagnosis Koneksi MySQL:
+            </div>
+            <p className="text-[11px] leading-relaxed text-amber-800">{dbError}</p>
+          </div>
+        )}
 
         {initMessage && (
           <div className="text-xs p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono font-medium">

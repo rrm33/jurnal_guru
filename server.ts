@@ -4,7 +4,7 @@ import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 import { createServer as createViteServer } from "vite";
-import { getDbPool, isDbConnected } from "./src/db/mysql.ts";
+import { getDbPool, isDbConnected, testDbConnectionDetailed } from "./src/db/mysql.ts";
 
 async function startServer() {
   const app = express();
@@ -15,16 +15,17 @@ async function startServer() {
 
   // --- API ROUTES ---
 
-  // Health check & DB connection status
+  // Health check & DB connection status with detailed diagnostic output
   app.get("/api/health", async (req, res) => {
-    const dbStatus = await isDbConnected();
+    const testResult = await testDbConnectionDetailed();
     res.json({
       status: "ok",
-      database: dbStatus ? "connected" : "disconnected",
+      database: testResult.connected ? "connected" : "disconnected",
+      error: testResult.error || null,
       config: {
-        host: process.env.DB_HOST || null,
-        database: process.env.DB_NAME || null,
-        user: process.env.DB_USER || null
+        host: testResult.host,
+        database: testResult.database,
+        user: testResult.user
       }
     });
   });
@@ -152,20 +153,29 @@ async function startServer() {
       `);
 
       console.log("[MySQL] Tabel berhasil dibuat / terverifikasi!");
-      return true;
-    } catch (err) {
+      return { success: true };
+    } catch (err: any) {
       console.error("[MySQL] Gagal inisialisasi tabel:", err);
-      return false;
+      return { success: false, error: err.message || "Gagal membuat tabel MySQL" };
     }
   }
 
   // Auto initialize MySQL tables endpoint (GET and POST supported)
   app.all("/api/init-db", async (req, res) => {
-    const success = await initDbTables();
-    if (success) {
-      res.json({ success: true, message: "Tabel MySQL berhasil dibuat/diverifikasi!" });
+    const testResult = await testDbConnectionDetailed();
+    if (!testResult.connected) {
+      return res.status(503).json({
+        success: false,
+        error: testResult.error || "Database MySQL belum terhubung.",
+        config: { host: testResult.host, database: testResult.database, user: testResult.user }
+      });
+    }
+
+    const initResult = await initDbTables();
+    if (initResult.success) {
+      res.json({ success: true, message: "Tabel MySQL berhasil dibuat & diverifikasi!" });
     } else {
-      res.status(500).json({ error: "Gagal menginisialisasi tabel MySQL. Pastikan database terhubung." });
+      res.status(500).json({ success: false, error: initResult.error });
     }
   });
 
