@@ -5,6 +5,19 @@ import dotenv from "dotenv";
 dotenv.config();
 import { createServer as createViteServer } from "vite";
 import { getDbPool, isDbConnected, testDbConnectionDetailed } from "./src/db/mysql.ts";
+import { 
+  readJsonDb,
+  getJsonTeacherProfile, saveJsonTeacherProfile,
+  getJsonStudents, saveJsonStudent, deleteJsonStudent,
+  getJsonLessonPlans, saveJsonLessonPlan, deleteJsonLessonPlan,
+  getJsonAttendance, saveJsonAttendance, saveJsonAttendanceBulk,
+  getJsonMaterials, saveJsonMaterial, deleteJsonMaterial,
+  getJsonTasks, saveJsonTask,
+  getJsonTaskSubmissions, saveJsonTaskSubmission,
+  getJsonDevelopmentProgress, saveJsonDevelopmentProgress,
+  getJsonDisciplineLogs, saveJsonDisciplineLog,
+  syncAllDataToJson
+} from "./src/db/jsonStore.ts";
 
 async function startServer() {
   const app = express();
@@ -15,31 +28,43 @@ async function startServer() {
 
   // --- API ROUTES ---
 
-  // Health check & DB connection status with try-catch and detailed error diagnostics
+  // Health check & DB connection status with fallback to Server JSON Store
   app.get("/api/health", async (req, res) => {
     try {
       const testResult = await testDbConnectionDetailed();
+      if (testResult.connected) {
+        res.json({
+          status: "ok",
+          database: "connected",
+          mode: "mysql",
+          error: null,
+          config: {
+            host: testResult.host,
+            database: testResult.database,
+            user: testResult.user
+          }
+        });
+      } else {
+        res.json({
+          status: "ok",
+          database: "connected",
+          mode: "json_server",
+          message: "Server JSON Storage Aktif - Semua data tersimpan terpusat di server & dapat diakses antar-perangkat.",
+          mysqlError: testResult.error,
+          config: {
+            host: testResult.host,
+            database: testResult.database,
+            user: testResult.user
+          }
+        });
+      }
+    } catch (err: any) {
       res.json({
         status: "ok",
-        database: testResult.connected ? "connected" : "disconnected",
-        error: testResult.error || null,
-        config: {
-          host: testResult.host,
-          database: testResult.database,
-          user: testResult.user
-        }
-      });
-    } catch (err: any) {
-      console.error("[API /api/health Error]:", err);
-      res.status(500).json({
-        status: "error",
-        database: "disconnected",
-        error: `[Server TryCatch Error] ${err.message || String(err)}`,
-        config: {
-          host: process.env.DB_HOST || 'Belum diisi',
-          database: process.env.DB_NAME || 'Belum diisi',
-          user: process.env.DB_USER || 'Belum diisi'
-        }
+        database: "connected",
+        mode: "json_server",
+        message: "Server JSON Storage Aktif - Semua data tersimpan terpusat di server.",
+        mysqlError: err.message || String(err)
       });
     }
   });
@@ -178,10 +203,10 @@ async function startServer() {
   app.all("/api/init-db", async (req, res) => {
     const testResult = await testDbConnectionDetailed();
     if (!testResult.connected) {
-      return res.status(503).json({
-        success: false,
-        error: testResult.error || "Database MySQL belum terhubung.",
-        config: { host: testResult.host, database: testResult.database, user: testResult.user }
+      return res.status(200).json({
+        success: true,
+        message: "Memakai Server JSON Storage. MySQL tidak aktif.",
+        mode: "json_server"
       });
     }
 
@@ -196,321 +221,381 @@ async function startServer() {
   // --- TEACHER PROFILE ---
   app.get("/api/teacher-profile", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT name, nip, school, subjectGroup FROM teacher_profile LIMIT 1");
-      if (rows && rows.length > 0) {
-        res.json(rows[0]);
-      } else {
-        res.json(null);
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT name, nip, school, subjectGroup FROM teacher_profile LIMIT 1");
+        if (rows && rows.length > 0) return res.json(rows[0]);
+      } catch (err) {
+        console.warn("[MySQL] teacher-profile fetch failed, falling back to JSON store");
       }
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
     }
+    res.json(getJsonTeacherProfile());
   });
 
   app.post("/api/teacher-profile", async (req, res) => {
+    const profile = req.body;
+    saveJsonTeacherProfile(profile);
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    const { name, nip, school, subjectGroup } = req.body;
-    try {
-      const [rows]: any = await pool.query("SELECT id FROM teacher_profile LIMIT 1");
-      if (rows && rows.length > 0) {
-        await pool.query("UPDATE teacher_profile SET name = ?, nip = ?, school = ?, subjectGroup = ? WHERE id = ?", [
-          name, nip, school, subjectGroup, rows[0].id
-        ]);
-      } else {
-        await pool.query("INSERT INTO teacher_profile (name, nip, school, subjectGroup) VALUES (?, ?, ?, ?)", [
-          name, nip, school, subjectGroup
-        ]);
+    if (pool) {
+      try {
+        const { name, nip, school, subjectGroup } = profile;
+        const [rows]: any = await pool.query("SELECT id FROM teacher_profile LIMIT 1");
+        if (rows && rows.length > 0) {
+          await pool.query("UPDATE teacher_profile SET name = ?, nip = ?, school = ?, subjectGroup = ? WHERE id = ?", [
+            name, nip, school, subjectGroup, rows[0].id
+          ]);
+        } else {
+          await pool.query("INSERT INTO teacher_profile (name, nip, school, subjectGroup) VALUES (?, ?, ?, ?)", [
+            name, nip, school, subjectGroup
+          ]);
+        }
+      } catch (err) {
+        console.warn("[MySQL] teacher-profile save failed, saved in JSON store");
       }
-      res.json({ success: true, profile: { name, nip, school, subjectGroup } });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
     }
+    res.json({ success: true, profile });
   });
 
   // --- STUDENTS ---
   app.get("/api/students", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT id, name, nisn, className, gender FROM students");
-      res.json(rows);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT id, name, nisn, className, gender FROM students");
+        if (rows && rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn("[MySQL] students fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonStudents());
   });
 
   app.post("/api/students", async (req, res) => {
+    const student = req.body;
+    saveJsonStudent(student);
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    const { id, name, nisn, className, gender } = req.body;
-    try {
-      await pool.query("REPLACE INTO students (id, name, nisn, className, gender) VALUES (?, ?, ?, ?, ?)", [
-        id, name, nisn, className, gender
-      ]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const { id, name, nisn, className, gender } = student;
+        await pool.query("REPLACE INTO students (id, name, nisn, className, gender) VALUES (?, ?, ?, ?, ?)", [
+          id, name, nisn, className, gender
+        ]);
+      } catch (err) {
+        console.warn("[MySQL] student save failed, saved in JSON store");
+      }
     }
+    res.json({ success: true });
   });
 
   app.delete("/api/students/:id", async (req, res) => {
+    deleteJsonStudent(req.params.id);
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      await pool.query("DELETE FROM students WHERE id = ?", [req.params.id]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM students WHERE id = ?", [req.params.id]);
+      } catch (err) {
+        console.warn("[MySQL] student delete failed");
+      }
     }
+    res.json({ success: true });
   });
 
   // --- LESSON PLANS ---
   app.get("/api/lesson-plans", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT * FROM lesson_plans");
-      const formatted = rows.map((r: any) => ({
-        ...r,
-        materialFile: r.materialFile ? JSON.parse(r.materialFile) : null
-      }));
-      res.json(formatted);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM lesson_plans");
+        if (rows && rows.length > 0) {
+          const formatted = rows.map((r: any) => ({
+            ...r,
+            materialFile: r.materialFile ? JSON.parse(r.materialFile) : null
+          }));
+          return res.json(formatted);
+        }
+      } catch (err) {
+        console.warn("[MySQL] lesson-plans fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonLessonPlans());
   });
 
   app.post("/api/lesson-plans", async (req, res) => {
-    const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
     const lp = req.body;
-    try {
-      await pool.query(`
-        REPLACE INTO lesson_plans 
-        (id, week, semester, subject, className, topic, competency, activities, resources, status, materialText, materialFile, taskTitle, taskDescription, taskMaxPoints, taskDeadline)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        lp.id, lp.week, lp.semester, lp.subject, lp.className, lp.topic, lp.competency, lp.activities, lp.resources, lp.status,
-        lp.materialText || null, lp.materialFile ? JSON.stringify(lp.materialFile) : null,
-        lp.taskTitle || null, lp.taskDescription || null, lp.taskMaxPoints || 100, lp.taskDeadline || null
-      ]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    saveJsonLessonPlan(lp);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query(`
+          REPLACE INTO lesson_plans 
+          (id, week, semester, subject, className, topic, competency, activities, resources, status, materialText, materialFile, taskTitle, taskDescription, taskMaxPoints, taskDeadline)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          lp.id, lp.week, lp.semester, lp.subject, lp.className, lp.topic, lp.competency, lp.activities, lp.resources, lp.status,
+          lp.materialText || null, lp.materialFile ? JSON.stringify(lp.materialFile) : null,
+          lp.taskTitle || null, lp.taskDescription || null, lp.taskMaxPoints || 100, lp.taskDeadline || null
+        ]);
+      } catch (err) {
+        console.warn("[MySQL] lesson-plan save failed, saved in JSON store");
+      }
     }
+    res.json({ success: true });
   });
 
   app.delete("/api/lesson-plans/:id", async (req, res) => {
+    deleteJsonLessonPlan(req.params.id);
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      await pool.query("DELETE FROM lesson_plans WHERE id = ?", [req.params.id]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM lesson_plans WHERE id = ?", [req.params.id]);
+      } catch (err) {
+        console.warn("[MySQL] lesson-plan delete failed");
+      }
     }
+    res.json({ success: true });
   });
 
   // --- ATTENDANCE ---
   app.get("/api/attendance", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT * FROM attendance");
-      res.json(rows);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM attendance");
+        if (rows && rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn("[MySQL] attendance fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonAttendance());
   });
 
   app.post("/api/attendance", async (req, res) => {
+    const att = req.body;
+    saveJsonAttendance(att);
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    const { id, date, className, studentId, status, notes, lessonPlanId } = req.body;
-    try {
-      await pool.query(`
-        REPLACE INTO attendance (id, date, className, studentId, status, notes, lessonPlanId)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [id, date, className, studentId, status, notes || null, lessonPlanId || null]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const { id, date, className, studentId, status, notes, lessonPlanId } = att;
+        await pool.query(`
+          REPLACE INTO attendance (id, date, className, studentId, status, notes, lessonPlanId)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [id, date, className, studentId, status, notes || null, lessonPlanId || null]);
+      } catch (err) {
+        console.warn("[MySQL] attendance save failed, saved in JSON store");
+      }
     }
+    res.json({ success: true });
   });
 
   // Bulk save attendance
   app.post("/api/attendance/bulk", async (req, res) => {
-    const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
     const items: any[] = req.body;
-    if (!Array.isArray(items)) return res.status(400).json({ error: "Payload harus berupa array" });
-    try {
-      for (const item of items) {
-        await pool.query(`
-          REPLACE INTO attendance (id, date, className, studentId, status, notes, lessonPlanId)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [item.id, item.date, item.className, item.studentId, item.status, item.notes || null, item.lessonPlanId || null]);
+    if (Array.isArray(items)) {
+      saveJsonAttendanceBulk(items);
+      const pool = getDbPool();
+      if (pool) {
+        try {
+          for (const item of items) {
+            await pool.query(`
+              REPLACE INTO attendance (id, date, className, studentId, status, notes, lessonPlanId)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, [item.id, item.date, item.className, item.studentId, item.status, item.notes || null, item.lessonPlanId || null]);
+          }
+        } catch (err) {
+          console.warn("[MySQL] bulk attendance save failed, saved in JSON store");
+        }
       }
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
     }
+    res.json({ success: true });
   });
 
   // --- MATERIALS ---
   app.get("/api/materials", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT * FROM materials");
-      const formatted = rows.map((r: any) => ({
-        ...r,
-        file: r.file ? JSON.parse(r.file) : null
-      }));
-      res.json(formatted);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM materials");
+        if (rows && rows.length > 0) {
+          const formatted = rows.map((r: any) => ({
+            ...r,
+            file: r.file ? JSON.parse(r.file) : null
+          }));
+          return res.json(formatted);
+        }
+      } catch (err) {
+        console.warn("[MySQL] materials fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonMaterials());
   });
 
   app.post("/api/materials", async (req, res) => {
-    const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
     const m = req.body;
-    try {
-      await pool.query(`
-        REPLACE INTO materials (id, className, lessonPlanId, title, content, category, createdAt, file)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [m.id, m.className, m.lessonPlanId || null, m.title, m.content, m.category, m.createdAt, m.file ? JSON.stringify(m.file) : null]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    saveJsonMaterial(m);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query(`
+          REPLACE INTO materials (id, className, lessonPlanId, title, content, category, createdAt, file)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [m.id, m.className, m.lessonPlanId || null, m.title, m.content, m.category, m.createdAt, m.file ? JSON.stringify(m.file) : null]);
+      } catch (err) {
+        console.warn("[MySQL] material save failed, saved in JSON store");
+      }
     }
+    res.json({ success: true });
   });
 
   app.delete("/api/materials/:id", async (req, res) => {
+    deleteJsonMaterial(req.params.id);
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      await pool.query("DELETE FROM materials WHERE id = ?", [req.params.id]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM materials WHERE id = ?", [req.params.id]);
+      } catch (err) {
+        console.warn("[MySQL] material delete failed");
+      }
     }
+    res.json({ success: true });
   });
 
   // --- TASKS & SUBMISSIONS ---
   app.get("/api/tasks", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT * FROM tasks");
-      res.json(rows);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM tasks");
+        if (rows && rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn("[MySQL] tasks fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonTasks());
   });
 
   app.post("/api/tasks", async (req, res) => {
-    const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
     const t = req.body;
-    try {
-      await pool.query(`
-        REPLACE INTO tasks (id, className, title, description, maxPoints, deadline, createdAt, lessonPlanId)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [t.id, t.className, t.title, t.description, t.maxPoints || 100, t.deadline, t.createdAt, t.lessonPlanId || null]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    saveJsonTask(t);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query(`
+          REPLACE INTO tasks (id, className, title, description, maxPoints, deadline, createdAt, lessonPlanId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [t.id, t.className, t.title, t.description, t.maxPoints || 100, t.deadline, t.createdAt, t.lessonPlanId || null]);
+      } catch (err) {
+        console.warn("[MySQL] task save failed, saved in JSON store");
+      }
     }
+    res.json({ success: true });
   });
 
   app.get("/api/task-submissions", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT * FROM task_submissions");
-      const formatted = rows.map((r: any) => ({
-        ...r,
-        studentAnswerFile: r.studentAnswerFile ? JSON.parse(r.studentAnswerFile) : null
-      }));
-      res.json(formatted);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM task_submissions");
+        if (rows && rows.length > 0) {
+          const formatted = rows.map((r: any) => ({
+            ...r,
+            studentAnswerFile: r.studentAnswerFile ? JSON.parse(r.studentAnswerFile) : null
+          }));
+          return res.json(formatted);
+        }
+      } catch (err) {
+        console.warn("[MySQL] task-submissions fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonTaskSubmissions());
   });
 
   app.post("/api/task-submissions", async (req, res) => {
-    const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
     const s = req.body;
-    try {
-      await pool.query(`
-        REPLACE INTO task_submissions (id, taskId, studentId, submissionDate, status, grade, feedback, studentAnswerText, studentAnswerFile)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        s.id, s.taskId, s.studentId, s.submissionDate || null, s.status, s.grade ?? null, s.feedback || null, s.studentAnswerText || null,
-        s.studentAnswerFile ? JSON.stringify(s.studentAnswerFile) : null
-      ]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    saveJsonTaskSubmission(s);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query(`
+          REPLACE INTO task_submissions (id, taskId, studentId, submissionDate, status, grade, feedback, studentAnswerText, studentAnswerFile)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          s.id, s.taskId, s.studentId, s.submissionDate || null, s.status, s.grade ?? null, s.feedback || null, s.studentAnswerText || null,
+          s.studentAnswerFile ? JSON.stringify(s.studentAnswerFile) : null
+        ]);
+      } catch (err) {
+        console.warn("[MySQL] task submission save failed, saved in JSON store");
+      }
     }
+    res.json({ success: true });
   });
 
   // --- DEVELOPMENT PROGRESS ---
   app.get("/api/development-progress", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT * FROM development_progress");
-      res.json(rows);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM development_progress");
+        if (rows && rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn("[MySQL] dev progress fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonDevelopmentProgress());
   });
 
   app.post("/api/development-progress", async (req, res) => {
-    const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
     const p = req.body;
-    try {
-      await pool.query(`
-        REPLACE INTO development_progress (id, studentId, date, aspect, status, notes)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `, [p.id, p.studentId, p.date, p.aspect, p.status, p.notes]);
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    saveJsonDevelopmentProgress(p);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query(`
+          REPLACE INTO development_progress (id, studentId, date, aspect, status, notes)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `, [p.id, p.studentId, p.date, p.aspect, p.status, p.notes]);
+      } catch (err) {
+        console.warn("[MySQL] dev progress save failed, saved in JSON store");
+      }
     }
+    res.json({ success: true });
   });
 
   // --- DISCIPLINE LOGS ---
   app.get("/api/discipline-logs", async (req, res) => {
     const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
-    try {
-      const [rows]: any = await pool.query("SELECT * FROM discipline_logs");
-      res.json(rows);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM discipline_logs");
+        if (rows && rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn("[MySQL] discipline logs fetch failed, falling back to JSON store");
+      }
     }
+    res.json(getJsonDisciplineLogs());
   });
 
   app.post("/api/discipline-logs", async (req, res) => {
-    const pool = getDbPool();
-    if (!pool) return res.status(503).json({ error: "Database MySQL tidak terhubung" });
     const d = req.body;
+    saveJsonDisciplineLog(d);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query(`
+          REPLACE INTO discipline_logs (id, studentId, date, type, category, points, actionTaken, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [d.id, d.studentId, d.date, d.type, d.category, d.points, d.actionTaken || null, d.notes || null]);
+      } catch (err) {
+        console.warn("[MySQL] discipline log save failed, saved in JSON store");
+      }
+    }
+    res.json({ success: true });
+  });
+
+  // --- SYNC ALL DATA ENDPOINT ---
+  app.post("/api/sync-all", (req, res) => {
     try {
-      await pool.query(`
-        REPLACE INTO discipline_logs (id, studentId, date, type, category, points, actionTaken, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [d.id, d.studentId, d.date, d.type, d.category, d.points, d.actionTaken || null, d.notes || null]);
-      res.json({ success: true });
+      const synced = syncAllDataToJson(req.body);
+      res.json({ success: true, data: synced });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

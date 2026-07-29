@@ -111,7 +111,7 @@ export default function App() {
   useEffect(() => { saveData("discipline_logs", disciplineLogs); }, [disciplineLogs]);
   useEffect(() => { saveData("exam_grades", examGrades); }, [examGrades]);
 
-  // --- INITIAL MYSQL BACKEND SYNC ---
+  // --- INITIAL & PERIODIC BACKEND SYNC (MULTI-DEVICE) ---
   useEffect(() => {
     async function loadFromBackend() {
       try {
@@ -146,6 +146,13 @@ export default function App() {
       }
     }
     loadFromBackend();
+
+    // Auto-poll server every 10 seconds to sync data across devices in real time
+    const pollInterval = setInterval(() => {
+      loadFromBackend();
+    }, 10000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   // --- USER ROLE STATES ---

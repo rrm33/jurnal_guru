@@ -14,6 +14,7 @@ export default function BackupData({
 }: BackupDataProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dbStatus, setDbStatus] = useState<"checking" | "connected" | "disconnected">("checking");
+  const [dbMode, setDbMode] = useState<"mysql" | "json_server">("mysql");
   const [dbConfig, setDbConfig] = useState<{ host?: string; database?: string; user?: string }>({});
   const [dbError, setDbError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -28,15 +29,18 @@ export default function BackupData({
       if (contentType && contentType.includes("application/json")) {
         const data = await res.json();
         setDbStatus(data.database === "connected" ? "connected" : "disconnected");
+        setDbMode(data.mode || "mysql");
         setDbConfig(data.config || {});
-        if (data.database !== "connected") {
-          setDbError(data.error || "Gagal terhubung ke MySQL. Silakan periksa kredensial di file .env / cPanel Node.js Selector.");
+        if (data.mode === "json_server") {
+          setDbError(data.mysqlError || null);
+        } else if (data.database !== "connected") {
+          setDbError(data.error || "Gagal terhubung ke MySQL. Silakan periksa kredensial di file .env.");
         }
       } else {
         const text = await res.text();
         setDbStatus("disconnected");
         if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
-          setDbError("Server cPanel mengembalikan halaman HTML. Pastikan aplikasi Node.js sudah di-restart pada cPanel Node.js Selector.");
+          setDbError("Server cPanel mengembalikan halaman HTML. Pastikan aplikasi Node.js sudah di-restart.");
         } else {
           setDbError(`Respon server tidak valid (${res.status}): ${text.slice(0, 100)}`);
         }
@@ -127,20 +131,25 @@ export default function BackupData({
         {/* DB Connection Badge */}
         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
           <Database size={16} className="text-slate-600" />
-          <span className="text-xs font-semibold text-slate-700">MySQL Status:</span>
+          <span className="text-xs font-semibold text-slate-700">Database Status:</span>
           {dbStatus === "checking" && (
             <span className="text-xs text-amber-600 flex items-center gap-1 font-medium">
               <RefreshCw size={12} className="animate-spin" /> Memeriksa...
             </span>
           )}
-          {dbStatus === "connected" && (
+          {dbStatus === "connected" && dbMode === "mysql" && (
             <span className="text-xs text-emerald-600 flex items-center gap-1 font-bold">
-              <CheckCircle2 size={14} /> Terhubung ({dbConfig.database || "MySQL"})
+              <CheckCircle2 size={14} /> MySQL ({dbConfig.database || "Connected"})
+            </span>
+          )}
+          {dbStatus === "connected" && dbMode === "json_server" && (
+            <span className="text-xs text-blue-600 flex items-center gap-1 font-bold">
+              <CheckCircle2 size={14} /> Server JSON DB (Terpusat)
             </span>
           )}
           {dbStatus === "disconnected" && (
             <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
-              <XCircle size={14} className="text-slate-400" /> Mode Lokal (LocalStorage)
+              <XCircle size={14} className="text-slate-400" /> Mode Browser (LocalStorage)
             </span>
           )}
           <button 
@@ -159,10 +168,10 @@ export default function BackupData({
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h4 className="font-bold text-natural-dark text-sm flex items-center gap-2">
-              <Server size={18} className="text-emerald-600" /> Pengaturan Database MySQL (cPanel / Arenhost)
+              <Server size={18} className="text-emerald-600" /> Pengaturan Database (Server JSON & MySQL)
             </h4>
             <p className="text-slate-500 text-xs leading-relaxed mt-1">
-              Data disimpan secara otomatis ke database MySQL jika variabel koneksi di file <code className="bg-slate-100 px-1 py-0.5 rounded text-emerald-800 font-mono text-[11px]">.env</code> sudah dikonfigurasi pada cPanel Node.js Selector.
+              Aplikasi menyimpan data secara terpusat di server Node.js. Jika MySQL dikonfigurasi, data otomatis disinkronkan ke MySQL. Jika MySQL tidak aktif, data tetap aman tersimpan di Server JSON DB.
             </p>
           </div>
 
@@ -181,12 +190,24 @@ export default function BackupData({
               ) : (
                 <>
                   <Database size={14} />
-                  Buat / Verifikasi Tabel MySQL
+                  Cek / Inisialisasi MySQL
                 </>
               )}
             </button>
           </div>
         </div>
+
+        {dbMode === "json_server" && (
+          <div className="text-xs p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 space-y-1">
+            <div className="font-bold flex items-center gap-1.5 text-blue-800 text-xs">
+              <CheckCircle2 size={15} className="text-blue-600 shrink-0" /> Server JSON Storage Terpusat Berjalan Aktif!
+            </div>
+            <p className="text-[12px] leading-relaxed text-blue-800">
+              Tanpa koneksi MySQL sekalipun, seluruh data Anda & siswa (RPP, presensi, materi, tugas, dan pengumpulan tugas) secara otomatis tersimpan terpusat di server backend (<code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-[11px]">data/app_db.json</code>).
+              Siswa dari HP, laptop, atau tablet manapun dapat mengakses tugas dan mengumpulkan secara real-time!
+            </p>
+          </div>
+        )}
 
         {dbError && (
           <div className="text-xs p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-medium space-y-1">
