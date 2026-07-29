@@ -25,16 +25,21 @@ export default function BackupData({
     try {
       const res = await fetch("/api/health");
       const contentType = res.headers.get("content-type");
-      if (res.ok && contentType && contentType.includes("application/json")) {
+      if (contentType && contentType.includes("application/json")) {
         const data = await res.json();
         setDbStatus(data.database === "connected" ? "connected" : "disconnected");
         setDbConfig(data.config || {});
-        if (data.database !== "connected" && data.error) {
-          setDbError(data.error);
+        if (data.database !== "connected") {
+          setDbError(data.error || "Gagal terhubung ke MySQL. Silakan periksa kredensial di file .env / cPanel Node.js Selector.");
         }
       } else {
+        const text = await res.text();
         setDbStatus("disconnected");
-        setDbError("Endpoint /api/health mengembalikan halaman HTML/non-JSON.");
+        if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+          setDbError("Server cPanel mengembalikan halaman HTML. Pastikan aplikasi Node.js sudah di-restart pada cPanel Node.js Selector.");
+        } else {
+          setDbError(`Respon server tidak valid (${res.status}): ${text.slice(0, 100)}`);
+        }
       }
     } catch (err: any) {
       setDbStatus("disconnected");

@@ -15,19 +15,33 @@ async function startServer() {
 
   // --- API ROUTES ---
 
-  // Health check & DB connection status with detailed diagnostic output
+  // Health check & DB connection status with try-catch and detailed error diagnostics
   app.get("/api/health", async (req, res) => {
-    const testResult = await testDbConnectionDetailed();
-    res.json({
-      status: "ok",
-      database: testResult.connected ? "connected" : "disconnected",
-      error: testResult.error || null,
-      config: {
-        host: testResult.host,
-        database: testResult.database,
-        user: testResult.user
-      }
-    });
+    try {
+      const testResult = await testDbConnectionDetailed();
+      res.json({
+        status: "ok",
+        database: testResult.connected ? "connected" : "disconnected",
+        error: testResult.error || null,
+        config: {
+          host: testResult.host,
+          database: testResult.database,
+          user: testResult.user
+        }
+      });
+    } catch (err: any) {
+      console.error("[API /api/health Error]:", err);
+      res.status(500).json({
+        status: "error",
+        database: "disconnected",
+        error: `[Server TryCatch Error] ${err.message || String(err)}`,
+        config: {
+          host: process.env.DB_HOST || 'Belum diisi',
+          database: process.env.DB_NAME || 'Belum diisi',
+          user: process.env.DB_USER || 'Belum diisi'
+        }
+      });
+    }
   });
 
   // Function to initialize MySQL tables automatically

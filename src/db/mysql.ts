@@ -55,20 +55,23 @@ export async function testDbConnectionDetailed(): Promise<{ connected: boolean; 
   try {
     const activePool = getDbPool();
     if (!activePool) {
-      return { connected: false, error: "Gagal membuat pool koneksi MySQL.", host, database, user };
+      return { connected: false, error: "Gagal membuat pool koneksi MySQL. Periksa variabel DB_HOST dan DB_NAME.", host, database, user };
     }
     const connection = await activePool.getConnection();
     connection.release();
     return { connected: true, host, database, user };
   } catch (err: any) {
     console.error("[MySQL] Connection check failed:", err);
-    let detailedError = err.message || "Unknown connection error";
+    let detailedError = `[${err.code || 'UNKNOWN_ERROR'}] ${err.message || String(err)}`;
+    
     if (err.code === 'ECONNREFUSED') {
-      detailedError = `Gagal terhubung ke MySQL server (${host}:${process.env.DB_PORT || 3306}). Pastikan MySQL service berjalan dan gunakan DB_HOST = 127.0.0.1`;
+      detailedError = `[ECONNREFUSED] Gagal terhubung ke MySQL server (${host}:${process.env.DB_PORT || 3306}). Service MySQL mungkin tidak berjalan atau tidak menerima koneksi dari host ini. Gunakan DB_HOST = 127.0.0.1. Detail: ${err.message}`;
     } else if (err.code === 'ER_ACCESS_DENIED_ERROR') {
-      detailedError = `Akses ditolak untuk user '${user}'. Periksa kembali DB_USER dan DB_PASSWORD pada cPanel.`;
+      detailedError = `[ER_ACCESS_DENIED_ERROR] Akses ditolak untuk user '${user}'. Periksa DB_USER dan DB_PASSWORD pada cPanel. Detail: ${err.message}`;
     } else if (err.code === 'ER_BAD_DB_ERROR') {
-      detailedError = `Database '${database}' tidak ditemukan. Pastikan nama database di cPanel sudah sesuai (termasuk prefix cPanel seperti 'user_dbname').`;
+      detailedError = `[ER_BAD_DB_ERROR] Database '${database}' tidak ditemukan. Pastikan nama database di cPanel sudah sesuai (termasuk prefix username cPanel, contoh: 'username_jurnal'). Detail: ${err.message}`;
+    } else if (err.code === 'ENOTFOUND') {
+      detailedError = `[ENOTFOUND] Host '${host}' tidak dapat ditemukan. Coba ganti DB_HOST menjadi '127.0.0.1' atau 'localhost'. Detail: ${err.message}`;
     }
     return { connected: false, error: detailedError, host, database, user };
   }
