@@ -21,7 +21,9 @@ import {
   UserCheck, 
   TrendingUp,
   Eye,
-  Camera
+  Camera,
+  Lock,
+  KeyRound
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Student, LessonPlan, Attendance, Material, Task, TaskSubmission, DisciplineLog } from "../types";
@@ -37,6 +39,7 @@ interface StudentPortalProps {
   disciplineLogs: DisciplineLog[];
   onSaveSubmission: (submission: TaskSubmission) => void;
   onUpdateStudentPhoto: (studentId: string, photoUrl: string) => void;
+  onUpdateStudentPassword?: (studentId: string, newPassword: string) => void;
   onLogout: () => void;
   onSelectStudentPhoto?: (student: Student) => void;
 }
@@ -51,6 +54,7 @@ export default function StudentPortal({
   disciplineLogs,
   onSaveSubmission,
   onUpdateStudentPhoto,
+  onUpdateStudentPassword,
   onLogout,
   onSelectStudentPhoto
 }: StudentPortalProps) {
@@ -59,6 +63,40 @@ export default function StudentPortal({
 
   // Subsections navigation inside Student Portal
   const [activeSubTab, setActiveSubTab] = useState<"materi" | "attitude">("materi");
+
+  // Password change state
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+
+  const handleSaveNewPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    const pass = newPasswordInput.trim();
+    const confirmPass = confirmPasswordInput.trim();
+
+    if (!pass || pass.length < 3) {
+      setPasswordError("Kata sandi baru minimal harus 3 karakter.");
+      return;
+    }
+
+    if (pass !== confirmPass) {
+      setPasswordError("Konfirmasi kata sandi tidak cocok. Harap periksa kembali.");
+      return;
+    }
+
+    if (onUpdateStudentPassword) {
+      onUpdateStudentPassword(loggedStudent.id, pass);
+      setPasswordSuccess("Kata sandi berhasil diperbarui! Nama Anda telah disembunyikan dari daftar awal login.");
+      setNewPasswordInput("");
+      setConfirmPasswordInput("");
+      setShowPasswordSection(false);
+    }
+  };
 
   // Submission editing form states (per task ID)
   const [submissionTexts, setSubmissionTexts] = useState<{ [taskId: string]: string }>({});
@@ -292,13 +330,23 @@ export default function StudentPortal({
             <p className="text-xs text-slate-400 mt-1">
               NISN: <span className="font-mono">{loggedStudent.nisn}</span> • Jenis Kelamin: {loggedStudent.gender === "L" ? "Laki-laki" : "Perempuan"}
             </p>
-            <button
-              onClick={() => photoInputRef.current?.click()}
-              className="mt-1.5 text-[11px] font-bold text-natural-sage hover:text-natural-dark flex items-center gap-1 cursor-pointer"
-            >
-              <Upload size={12} />
-              <span>Ganti Foto Profil</span>
-            </button>
+            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                className="text-[11px] font-bold text-natural-sage hover:text-natural-dark flex items-center gap-1 cursor-pointer"
+              >
+                <Upload size={12} />
+                <span>Ganti Foto Profil</span>
+              </button>
+              <span className="text-slate-300">•</span>
+              <button
+                onClick={() => setShowPasswordSection(!showPasswordSection)}
+                className="text-[11px] font-bold text-natural-sage hover:text-natural-dark flex items-center gap-1 cursor-pointer"
+              >
+                <KeyRound size={12} />
+                <span>Ubah Kata Sandi</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -310,6 +358,104 @@ export default function StudentPortal({
           Keluar
         </button>
       </div>
+
+      {/* Mandatory / First-time Password Creation Banner */}
+      {(!loggedStudent.hasChangedPassword || showPasswordSection) && (
+        <motion.div 
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl p-4 sm:p-5 border-2 shadow-sm space-y-3 ${
+            !loggedStudent.hasChangedPassword 
+              ? "bg-amber-50 border-amber-300 text-amber-900"
+              : "bg-white border-natural-border text-natural-dark"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${!loggedStudent.hasChangedPassword ? "bg-amber-200/80 text-amber-900" : "bg-natural-sage/20 text-natural-sage"}`}>
+              <Lock size={20} />
+            </div>
+            <div className="space-y-1 flex-1">
+              <h3 className="font-extrabold text-xs sm:text-sm flex items-center gap-2">
+                <span>
+                  {!loggedStudent.hasChangedPassword 
+                    ? "⚠️ Akses Pertama: Wajib Buat Kata Sandi (Password) Baru" 
+                    : "Ubah Kata Sandi Akun Siswa"}
+                </span>
+              </h3>
+              <p className="text-xs leading-relaxed opacity-90">
+                {!loggedStudent.hasChangedPassword 
+                  ? "Nama Anda saat ini masih muncul di daftar login awal. Setelah Anda membuat dan menyimpan Kata Sandi baru, nama Anda akan secara otomatis disembunyikan dari halaman login awal demi privasi dan keamanan."
+                  : "Buat kata sandi baru untuk mengamankan akun Anda. Gunakan kombinasi karakter yang mudah Anda ingat."}
+              </p>
+            </div>
+          </div>
+
+          {/* Inline Password Change Form */}
+          <form onSubmit={handleSaveNewPassword} className="pt-2 bg-white/80 backdrop-blur-xs p-3.5 rounded-xl border border-natural-border space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 block">Kata Sandi Baru</label>
+                <div className="relative">
+                  <KeyRound size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                  <input 
+                    type="password"
+                    placeholder="Minimal 3 karakter"
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    className="w-full bg-white border border-natural-border rounded-xl pl-8 pr-3 py-2 text-xs font-medium focus:outline-none focus:border-natural-sage"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 block">Konfirmasi Kata Sandi Baru</label>
+                <div className="relative">
+                  <Lock size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                  <input 
+                    type="password"
+                    placeholder="Ulangi kata sandi baru"
+                    value={confirmPasswordInput}
+                    onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                    className="w-full bg-white border border-natural-border rounded-xl pl-8 pr-3 py-2 text-xs font-medium focus:outline-none focus:border-natural-sage"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {passwordError && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle size={15} className="shrink-0" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
+                <span>{passwordSuccess}</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                className="bg-natural-dark hover:bg-natural-mid text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition-colors cursor-pointer shadow-3xs"
+              >
+                <ShieldCheck size={15} />
+                <span>Simpan Kata Sandi & Sembunyikan Nama dari Halaman Login</span>
+              </button>
+              {showPasswordSection && loggedStudent.hasChangedPassword && (
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordSection(false)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+              )}
+            </div>
+          </form>
+        </motion.div>
+      )}
 
       {/* Grid of Real-Time Analytics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

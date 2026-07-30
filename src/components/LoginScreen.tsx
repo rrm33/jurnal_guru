@@ -45,19 +45,45 @@ export default function LoginScreen({ students, onLoginSuccess }: LoginScreenPro
     if (e) e.preventDefault();
     setStudentError("");
 
-    const nisnToUse = targetNisn || nisnInput.trim();
+    // If student clicked their name directly from the unconfigured list
+    if (targetNisn) {
+      const foundStudent = students.find(s => s.nisn === targetNisn);
+      if (foundStudent) {
+        onLoginSuccess("siswa", foundStudent);
+        return;
+      }
+    }
+
+    const nisnToUse = nisnInput.trim();
     if (!nisnToUse) {
       setStudentError("Harap masukkan NISN Siswa.");
       return;
     }
 
     const foundStudent = students.find(s => s.nisn === nisnToUse);
-    if (foundStudent) {
-      onLoginSuccess("siswa", foundStudent);
-    } else {
-      setStudentError("NISN tidak ditemukan. Pilih salah satu siswa dari daftar di bawah.");
+    if (!foundStudent) {
+      setStudentError("NISN tidak ditemukan. Periksa kembali NISN Anda.");
+      return;
     }
+
+    // If student has already set/changed their custom password, password input is mandatory
+    if (foundStudent.hasChangedPassword) {
+      const passToUse = studentPassword.trim();
+      if (!passToUse) {
+        setStudentError("Akun ini telah memiliki Kata Sandi. Harap masukkan Kata Sandi Anda.");
+        return;
+      }
+      if (foundStudent.password && foundStudent.password !== passToUse) {
+        setStudentError("Kata sandi salah. Harap periksa kembali password Anda.");
+        return;
+      }
+    }
+
+    onLoginSuccess("siswa", foundStudent);
   };
+
+  // Filter students who haven't changed their password yet
+  const unconfiguredStudents = students.filter(s => !s.hasChangedPassword);
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-text flex items-center justify-center p-4 sm:p-6 font-sans">
@@ -184,6 +210,22 @@ export default function LoginScreen({ students, onLoginSuccess }: LoginScreenPro
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Kata Sandi <span className="font-normal text-slate-400 text-[10px]">(Opsional jika belum ganti)</span>
+                  </label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="password"
+                      placeholder="Masukkan kata sandi baru Anda"
+                      value={studentPassword}
+                      onChange={(e) => setStudentPassword(e.target.value)}
+                      className="w-full bg-[#FBFBFA] border border-natural-border rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium focus:outline-none focus:border-natural-sage"
+                    />
+                  </div>
+                </div>
+
                 {studentError && (
                   <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
                     <AlertCircle size={15} className="shrink-0" />
@@ -200,33 +242,47 @@ export default function LoginScreen({ students, onLoginSuccess }: LoginScreenPro
                 </button>
               </form>
 
-              {/* Quick Demo Students Selection */}
+              {/* Unconfigured Students Selection (Akses Pertama) */}
               <div className="border-t border-natural-border pt-4 space-y-2">
-                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider text-center">Pilih Akun Demo Siswa Lengkap</p>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                  {students.slice(0, 5).map(std => (
-                    <button
-                      key={std.id}
-                      onClick={() => handleStudentLogin(null as any, std.nisn)}
-                      className="w-full flex items-center justify-between bg-[#FBFBFA] hover:bg-natural-accent/50 border border-natural-border p-2.5 rounded-xl text-left transition-all text-xs text-natural-dark cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        {std.photoUrl ? (
-                          <img src={std.photoUrl} alt={std.name} className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
-                            {std.name.charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-bold">{std.name}</p>
-                          <p className="text-[10px] text-slate-400">NISN: <span className="font-mono">{std.nisn}</span> • {std.className}</p>
-                        </div>
-                      </div>
-                      <ChevronRight size={14} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                    </button>
-                  ))}
+                <div className="text-center space-y-0.5">
+                  <p className="text-[11px] font-bold text-natural-dark">
+                    Siswa Baru / Belum Ganti Password ({unconfiguredStudents.length})
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    Klik nama Anda di bawah ini untuk masuk pertama kali & ganti kata sandi.
+                  </p>
                 </div>
+
+                {unconfiguredStudents.length > 0 ? (
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                    {unconfiguredStudents.map(std => (
+                      <button
+                        key={std.id}
+                        onClick={() => handleStudentLogin(null as any, std.nisn)}
+                        className="w-full flex items-center justify-between bg-[#FBFBFA] hover:bg-natural-accent/50 border border-natural-border p-2.5 rounded-xl text-left transition-all text-xs text-natural-dark cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          {std.photoUrl ? (
+                            <img src={std.photoUrl} alt={std.name} className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
+                              {std.name.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-bold">{std.name}</p>
+                            <p className="text-[10px] text-slate-400">NISN: <span className="font-mono">{std.nisn}</span> • {std.className}</p>
+                          </div>
+                        </div>
+                        <ChevronRight size={14} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-[11px] text-center font-medium">
+                    ✨ Semua siswa telah memperbarui kata sandi. Nama siswa tidak lagi ditampilkan di sini demi keamanan. Silakan masuk dengan NISN & Password Anda.
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

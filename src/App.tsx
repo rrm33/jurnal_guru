@@ -470,6 +470,28 @@ export default function App() {
     setStudents(prev => prev.map(s => s.id === studentId ? { ...s, photoUrl } : s));
   };
 
+  const handleUpdateStudentPassword = (studentId: string, newPassword: string) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return { ...s, password: newPassword, hasChangedPassword: true };
+      }
+      return s;
+    }));
+
+    if (authSession && authSession.studentData && authSession.studentData.id === studentId) {
+      const updatedSession = {
+        ...authSession,
+        studentData: {
+          ...authSession.studentData,
+          password: newPassword,
+          hasChangedPassword: true
+        }
+      };
+      setAuthSession(updatedSession);
+      saveData("app_auth_session", updatedSession);
+    }
+  };
+
   const handleDeleteStudent = (id: string) => {
     setStudents(prev => prev.filter(s => s.id !== id));
     // Cascade delete logs and assignments for this student
@@ -839,6 +861,7 @@ export default function App() {
               disciplineLogs={disciplineLogs}
               onSaveSubmission={handleSaveSubmission}
               onUpdateStudentPhoto={handleUpdateStudentPhoto}
+              onUpdateStudentPassword={handleUpdateStudentPassword}
               onLogout={handleLogout}
               onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
             />

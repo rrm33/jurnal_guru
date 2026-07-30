@@ -13,6 +13,7 @@ export interface Student {
   gender: "L" | "P";
   photoUrl?: string;
   password?: string;
+  hasChangedPassword?: boolean;
 }
 
 export interface UserAccount {
