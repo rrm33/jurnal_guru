@@ -63,8 +63,9 @@ import StudentPortal from "./components/StudentPortal";
 import LoginScreen from "./components/LoginScreen";
 import UserManagement from "./components/UserManagement";
 import PhotoModal from "./components/PhotoModal";
+import Profile from "./components/Profile";
 
-type TabID = "dashboard" | "rpp" | "attendance" | "students" | "progress" | "discipline" | "grades" | "users" | "backup";
+type TabID = "dashboard" | "rpp" | "attendance" | "students" | "progress" | "discipline" | "grades" | "users" | "profile" | "backup";
 
 export default function App() {
   // --- AUTH SESSION STATE ---
@@ -126,16 +127,46 @@ export default function App() {
     saveData("teacher_profile", teacherProfile); 
     saveItemToApi("teacher-profile", teacherProfile);
   }, [teacherProfile]);
-  useEffect(() => { saveData("students", students); }, [students]);
-  useEffect(() => { saveData("lesson_plans", lessonPlans); }, [lessonPlans]);
-  useEffect(() => { saveData("attendance", attendance); }, [attendance]);
-  useEffect(() => { saveData("materials", materials); }, [materials]);
-  useEffect(() => { saveData("tasks", tasks); }, [tasks]);
-  useEffect(() => { saveData("task_submissions", submissions); }, [submissions]);
-  useEffect(() => { saveData("development_logs", developmentLogs); }, [developmentLogs]);
-  useEffect(() => { saveData("discipline_logs", disciplineLogs); }, [disciplineLogs]);
-  useEffect(() => { saveData("exam_grades", examGrades); }, [examGrades]);
-  useEffect(() => { saveData("user_accounts", users); }, [users]);
+  useEffect(() => { 
+    saveData("students", students); 
+    saveItemToApi("students", students);
+  }, [students]);
+  useEffect(() => { 
+    saveData("lesson_plans", lessonPlans); 
+    saveItemToApi("lesson-plans", lessonPlans);
+  }, [lessonPlans]);
+  useEffect(() => { 
+    saveData("attendance", attendance); 
+    saveItemToApi("attendance", attendance);
+  }, [attendance]);
+  useEffect(() => { 
+    saveData("materials", materials); 
+    saveItemToApi("materials", materials);
+  }, [materials]);
+  useEffect(() => { 
+    saveData("tasks", tasks); 
+    saveItemToApi("tasks", tasks);
+  }, [tasks]);
+  useEffect(() => { 
+    saveData("task_submissions", submissions); 
+    saveItemToApi("task-submissions", submissions);
+  }, [submissions]);
+  useEffect(() => { 
+    saveData("development_logs", developmentLogs); 
+    saveItemToApi("development-progress", developmentLogs);
+  }, [developmentLogs]);
+  useEffect(() => { 
+    saveData("discipline_logs", disciplineLogs); 
+    saveItemToApi("discipline-logs", disciplineLogs);
+  }, [disciplineLogs]);
+  useEffect(() => { 
+    saveData("exam_grades", examGrades); 
+    saveItemToApi("exam-grades", examGrades);
+  }, [examGrades]);
+  useEffect(() => { 
+    saveData("user_accounts", users); 
+    saveItemToApi("user-accounts", users);
+  }, [users]);
   useEffect(() => { saveData("app_auth_session", authSession); }, [authSession]);
 
   // --- AUTH & USER HANDLERS ---
@@ -466,6 +497,16 @@ export default function App() {
     saveItemToApi("students", updatedStudent);
   };
 
+  const handleUpdateTeacherProfile = (updated: TeacherProfile) => {
+    setTeacherProfile(updated);
+    saveData("teacher_profile", updated);
+    saveItemToApi("teacher-profile", updated);
+  };
+
+  const handleUpdateTeacherPassword = (newPassword: string) => {
+    setUsers(prev => prev.map(u => u.username === "guru" ? { ...u, password: newPassword } : u));
+  };
+
   const handleUpdateStudentPhoto = (studentId: string, photoUrl: string) => {
     setStudents(prev => prev.map(s => s.id === studentId ? { ...s, photoUrl } : s));
   };
@@ -688,6 +729,7 @@ export default function App() {
     { id: "discipline", label: "Kedisiplinan & Sikap", icon: ShieldAlert },
     { id: "grades", label: "Rekap Nilai Akhir", icon: Percent },
     { id: "users", label: "Akses & User Accounts", icon: KeyRound },
+    { id: "profile", label: "Profil Saya", icon: User },
     { id: "backup", label: "Backup & Hosting", icon: HardDrive }
   ] as const;
 
@@ -735,7 +777,11 @@ export default function App() {
 
         {/* User Badge & Logout Button */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2.5 bg-natural-bg border border-natural-border px-3.5 py-1.5 rounded-xl text-xs">
+          <button 
+            onClick={() => isTeacher && setActiveTab("profile")}
+            className={`flex items-center gap-2.5 bg-natural-bg border border-natural-border px-3.5 py-1.5 rounded-xl text-xs transition-all ${isTeacher ? "hover:border-natural-sage cursor-pointer" : ""}`}
+            title={isTeacher ? "Buka Profil Saya" : ""}
+          >
             {isTeacher ? (
               <>
                 <div className="bg-natural-sage text-white p-1.5 rounded-lg">
@@ -767,7 +813,7 @@ export default function App() {
                 </div>
               </>
             )}
-          </div>
+          </button>
 
           <button
             onClick={handleLogout}
@@ -974,6 +1020,15 @@ export default function App() {
                   onAddUser={handleAddUser}
                   onUpdateUser={handleUpdateUser}
                   onDeleteUser={handleDeleteUser}
+                />
+              )}
+
+              {activeTab === "profile" && (
+                <Profile 
+                  role="guru"
+                  teacherProfile={teacherProfile}
+                  onUpdateTeacherProfile={handleUpdateTeacherProfile}
+                  onUpdateTeacherPassword={handleUpdateTeacherPassword}
                 />
               )}
 

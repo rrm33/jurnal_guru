@@ -28,6 +28,7 @@ import {
 import { motion } from "motion/react";
 import { Student, LessonPlan, Attendance, Material, Task, TaskSubmission, DisciplineLog } from "../types";
 import FilePreviewModal, { PreviewableFile } from "./FilePreviewModal";
+import Profile from "./Profile";
 
 interface StudentPortalProps {
   loggedStudent: Student;
@@ -62,7 +63,7 @@ export default function StudentPortal({
   const [photoSuccessMsg, setPhotoSuccessMsg] = useState("");
 
   // Subsections navigation inside Student Portal
-  const [activeSubTab, setActiveSubTab] = useState<"materi" | "attitude">("materi");
+  const [activeSubTab, setActiveSubTab] = useState<"materi" | "attitude" | "profil">("materi");
 
   // Password change state
   const [newPasswordInput, setNewPasswordInput] = useState("");
@@ -542,10 +543,31 @@ export default function StudentPortal({
             <UserCheck size={14} /> Catatan Sikap & Presensi
           </span>
         </button>
+        <button
+          onClick={() => setActiveSubTab("profil")}
+          className={`px-4 py-2.5 font-bold border-b-2 transition-all cursor-pointer ${
+            activeSubTab === "profil" 
+              ? "border-natural-mid text-natural-mid" 
+              : "border-transparent text-slate-400 hover:text-natural-dark"
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <User size={14} /> Profil Saya & Keamanan
+          </span>
+        </button>
       </div>
 
       {/* Main Content Area */}
       <div className="space-y-4">
+        {activeSubTab === "profil" && (
+          <Profile 
+            role="siswa"
+            loggedStudent={loggedStudent}
+            onUpdateStudentPhoto={onUpdateStudentPhoto}
+            onUpdateStudentPassword={onUpdateStudentPassword}
+            onSelectPhotoPreview={onSelectStudentPhoto}
+          />
+        )}
         {activeSubTab === "materi" && (
           <div className="space-y-4">
             <div className="bg-[#FBFBFA] border border-natural-border p-4.5 rounded-2xl space-y-3">

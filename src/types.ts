@@ -141,4 +141,7 @@ export interface TeacherProfile {
   nip: string;
   school: string;
   subjectGroup: string;
+  email?: string;
+  phone?: string;
+  photoUrl?: string;
 }
