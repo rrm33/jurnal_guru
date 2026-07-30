@@ -27,8 +27,34 @@ interface JsonDbData {
 
 function getInitialDbData(): JsonDbData {
   return {
-    teacherProfile: null,
-    students: [],
+    teacherProfile: {
+      name: "Ryan Maulana, S.Kom.",
+      nip: "19940823 202112 1 002",
+      school: "SMKN 6 Jember",
+      subjectGroup: "Rekayasa Perangkat Lunak (RPL)"
+    },
+    students: [
+      { id: "std_101", name: "Aditya Pratama Putra", nisn: "0074128910", className: "XI RPL 1", gender: "L" },
+      { id: "std_102", name: "Ahmad Fauzi", nisn: "0075192831", className: "XI RPL 1", gender: "L" },
+      { id: "std_103", name: "Bunga Lestari", nisn: "0081293847", className: "XI RPL 1", gender: "P" },
+      { id: "std_104", name: "Dwi Wahyudi", nisn: "0072938471", className: "XI RPL 1", gender: "L" },
+      { id: "std_105", name: "Eka Rahmawati", nisn: "0083102938", className: "XI RPL 1", gender: "P" },
+      { id: "std_106", name: "Fajar Ramadhan", nisn: "0079301928", className: "XI RPL 1", gender: "L" },
+      { id: "std_107", name: "Gita Cahyani", nisn: "0084920193", className: "XI RPL 1", gender: "P" },
+      { id: "std_108", name: "Hendra Wijaya", nisn: "0071920394", className: "XI RPL 1", gender: "L" },
+      { id: "std_109", name: "Indah Permatasari", nisn: "0083920194", className: "XI RPL 1", gender: "P" },
+      { id: "std_110", name: "Muhammad Rizky", nisn: "0074920195", className: "XI RPL 1", gender: "L" },
+      { id: "std_201", name: "Nabila Putri Salsabila", nisn: "0083920111", className: "XI RPL 2", gender: "P" },
+      { id: "std_202", name: "Nurul Hidayah", nisn: "0072938422", className: "XI RPL 2", gender: "P" },
+      { id: "std_203", name: "Pratama Yudha", nisn: "0073948273", className: "XI RPL 2", gender: "L" },
+      { id: "std_204", name: "Rian Ardiansyah", nisn: "0082938411", className: "XI RPL 2", gender: "L" },
+      { id: "std_205", name: "Siti Aminah", nisn: "0074829302", className: "XI RPL 2", gender: "P" },
+      { id: "std_206", name: "Taufik Hidayat", nisn: "0072938403", className: "XI RPL 2", gender: "L" },
+      { id: "std_207", name: "Vina Amelia", nisn: "0082910394", className: "XI RPL 2", gender: "P" },
+      { id: "std_208", name: "Wahyu Saputra", nisn: "0073910293", className: "XI RPL 2", gender: "L" },
+      { id: "std_209", name: "Yusuf Ibrahim", nisn: "0074910294", className: "XI RPL 2", gender: "L" },
+      { id: "std_210", name: "Zahra Syafira", nisn: "0083910295", className: "XI RPL 2", gender: "P" }
+    ],
     lessonPlans: [],
     attendance: [],
     materials: [],
@@ -209,6 +235,13 @@ export function saveJsonTask(task: any) {
   return task;
 }
 
+export function deleteJsonTask(id: string) {
+  const db = readJsonDb();
+  db.tasks = db.tasks.filter(t => t.id !== id);
+  writeJsonDb(db);
+  return true;
+}
+
 export function getJsonTaskSubmissions() {
   const db = readJsonDb();
   return db.taskSubmissions;
@@ -243,6 +276,13 @@ export function saveJsonDevelopmentProgress(prog: any) {
   return prog;
 }
 
+export function deleteJsonDevelopmentProgress(id: string) {
+  const db = readJsonDb();
+  db.developmentProgress = db.developmentProgress.filter(p => p.id !== id);
+  writeJsonDb(db);
+  return true;
+}
+
 export function getJsonDisciplineLogs() {
   const db = readJsonDb();
   return db.disciplineLogs;
@@ -258,6 +298,13 @@ export function saveJsonDisciplineLog(disc: any) {
   }
   writeJsonDb(db);
   return disc;
+}
+
+export function deleteJsonDisciplineLog(id: string) {
+  const db = readJsonDb();
+  db.disciplineLogs = db.disciplineLogs.filter(d => d.id !== id);
+  writeJsonDb(db);
+  return true;
 }
 
 // Bulk sync endpoint helper

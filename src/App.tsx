@@ -44,7 +44,7 @@ import {
   loadData,
   saveData
 } from "./data";
-import { fetchFromApiOrLocal } from "./lib/apiClient";
+import { fetchFromApiOrLocal, saveItemToApi, deleteItemFromApi } from "./lib/apiClient";
 
 // Components
 import Dashboard from "./components/Dashboard";
@@ -349,16 +349,20 @@ export default function App() {
   // Lesson Plans
   const handleAddPlan = (newPlan: LessonPlan) => {
     setLessonPlans(prev => [...prev, newPlan]);
+    saveItemToApi("lesson-plans", newPlan);
   };
   const handleUpdatePlan = (updatedPlan: LessonPlan) => {
     setLessonPlans(prev => prev.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+    saveItemToApi("lesson-plans", updatedPlan);
   };
   const handleDeletePlan = (id: string) => {
     setLessonPlans(prev => prev.filter(p => p.id !== id));
+    deleteItemFromApi("lesson-plans", id);
   };
 
   // Attendance
   const handleSaveAttendance = (className: string, date: string, records: { studentId: string; status: AttendanceStatus; notes: string }[], lessonPlanId?: string) => {
+    let newRecordsToSave: Attendance[] = [];
     setAttendance(prev => {
       // Remove any prior records matching this class & date, or matching the lessonPlanId if supplied
       const filtered = prev.filter(r => {
@@ -368,7 +372,7 @@ export default function App() {
         return !(r.className === className && r.date === date);
       });
       // Map new ones
-      const newRecords: Attendance[] = records.map((rec, i) => ({
+      newRecordsToSave = records.map((rec, i) => ({
         id: `att_${Date.now()}_${i}`,
         className,
         date,
@@ -377,8 +381,9 @@ export default function App() {
         notes: rec.notes || undefined,
         lessonPlanId: lessonPlanId || undefined
       }));
-      return [...filtered, ...newRecords];
+      return [...filtered, ...newRecordsToSave];
     });
+    saveItemToApi("attendance/bulk", newRecordsToSave);
   };
 
   // Student CRUD state updates
@@ -390,6 +395,7 @@ export default function App() {
         return [...prev, newStudent.className].sort();
       });
     }
+    saveItemToApi("students", newStudent);
   };
 
   const handleUpdateStudent = (updatedStudent: Student) => {
@@ -400,6 +406,7 @@ export default function App() {
         return [...prev, updatedStudent.className].sort();
       });
     }
+    saveItemToApi("students", updatedStudent);
   };
 
   const handleDeleteStudent = (id: string) => {
@@ -414,6 +421,7 @@ export default function App() {
       delete copy[id];
       return copy;
     });
+    deleteItemFromApi("students", id);
   };
 
   const handleBulkImportStudents = (newStudents: Student[]) => {
@@ -434,24 +442,29 @@ export default function App() {
 
       return [...prev, ...filteredNew];
     });
+    saveItemToApi("students", newStudents);
   };
 
 
   // Materials
   const handleAddMaterial = (newMat: Material) => {
     setMaterials(prev => [...prev, newMat]);
+    saveItemToApi("materials", newMat);
   };
   const handleDeleteMaterial = (id: string) => {
     setMaterials(prev => prev.filter(m => m.id !== id));
+    deleteItemFromApi("materials", id);
   };
 
   // Tasks
   const handleAddTask = (newTask: Task) => {
     setTasks(prev => [...prev, newTask]);
+    saveItemToApi("tasks", newTask);
   };
   const handleDeleteTask = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     setSubmissions(prev => prev.filter(s => s.taskId !== id)); // cascading delete submissions
+    deleteItemFromApi("tasks", id);
   };
 
   // Submissions (Grades)
@@ -463,6 +476,7 @@ export default function App() {
       }
       return [...prev, updatedSub];
     });
+    saveItemToApi("task-submissions", updatedSub);
   };
 
   // Exams
@@ -476,17 +490,21 @@ export default function App() {
   // Student Development
   const handleAddDevLog = (newLog: DevelopmentProgress) => {
     setDevelopmentLogs(prev => [...prev, newLog]);
+    saveItemToApi("development-progress", newLog);
   };
   const handleDeleteDevLog = (id: string) => {
     setDevelopmentLogs(prev => prev.filter(l => l.id !== id));
+    deleteItemFromApi("development-progress", id);
   };
 
   // Discipline
   const handleAddDisciplineLog = (newLog: DisciplineLog) => {
     setDisciplineLogs(prev => [...prev, newLog]);
+    saveItemToApi("discipline-logs", newLog);
   };
   const handleDeleteDisciplineLog = (id: string) => {
     setDisciplineLogs(prev => prev.filter(l => l.id !== id));
+    deleteItemFromApi("discipline-logs", id);
   };
 
   // --- DATA EXPORT / IMPORT ENGINE ---

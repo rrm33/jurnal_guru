@@ -6,8 +6,20 @@ export async function fetchFromApiOrLocal<T>(endpoint: string, localKey: string,
     if (res.ok) {
       const data = await res.json();
       if (data !== null && data !== undefined) {
-        // If it's an array and not empty, or if it's an object
-        if (!Array.isArray(data) || data.length > 0) {
+        if (Array.isArray(data)) {
+          if (data.length > 0) {
+            saveData(localKey, data);
+            return data as T;
+          } else {
+            // Server has empty array, check if local storage has existing user data to push to server
+            const localData = loadData<T>(localKey, defaultValue);
+            if (Array.isArray(localData) && localData.length > 0) {
+              saveItemToApi(endpoint, localData); // Push local data to server
+              return localData;
+            }
+            return data as T;
+          }
+        } else {
           saveData(localKey, data);
           return data as T;
         }

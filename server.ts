@@ -12,10 +12,10 @@ import {
   getJsonLessonPlans, saveJsonLessonPlan, deleteJsonLessonPlan,
   getJsonAttendance, saveJsonAttendance, saveJsonAttendanceBulk,
   getJsonMaterials, saveJsonMaterial, deleteJsonMaterial,
-  getJsonTasks, saveJsonTask,
+  getJsonTasks, saveJsonTask, deleteJsonTask,
   getJsonTaskSubmissions, saveJsonTaskSubmission,
-  getJsonDevelopmentProgress, saveJsonDevelopmentProgress,
-  getJsonDisciplineLogs, saveJsonDisciplineLog,
+  getJsonDevelopmentProgress, saveJsonDevelopmentProgress, deleteJsonDevelopmentProgress,
+  getJsonDisciplineLogs, saveJsonDisciplineLog, deleteJsonDisciplineLog,
   syncAllDataToJson
 } from "./src/db/jsonStore.ts";
 
@@ -278,17 +278,22 @@ async function startServer() {
   });
 
   app.post("/api/students", async (req, res) => {
-    const student = req.body;
-    saveJsonStudent(student);
+    const body = req.body;
+    const items = Array.isArray(body) ? body : [body];
     const pool = getDbPool();
-    if (pool) {
-      try {
-        const { id, name, nisn, className, gender } = student;
-        await pool.query("REPLACE INTO students (id, name, nisn, className, gender) VALUES (?, ?, ?, ?, ?)", [
-          id, name, nisn, className, gender
-        ]);
-      } catch (err) {
-        // Saved in JSON store
+    for (const student of items) {
+      if (student && student.id) {
+        saveJsonStudent(student);
+        if (pool) {
+          try {
+            const { id, name, nisn, className, gender } = student;
+            await pool.query("REPLACE INTO students (id, name, nisn, className, gender) VALUES (?, ?, ?, ?, ?)", [
+              id, name, nisn, className, gender
+            ]);
+          } catch (err) {
+            // Saved in JSON store
+          }
+        }
       }
     }
     res.json({ success: true });
@@ -497,6 +502,17 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.delete("/api/tasks/:id", async (req, res) => {
+    deleteJsonTask(req.params.id);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM tasks WHERE id = ?", [req.params.id]);
+      } catch (err) {}
+    }
+    res.json({ success: true });
+  });
+
   app.get("/api/task-submissions", async (req, res) => {
     const pool = getDbPool();
     if (pool) {
@@ -567,6 +583,17 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.delete("/api/development-progress/:id", async (req, res) => {
+    deleteJsonDevelopmentProgress(req.params.id);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM development_progress WHERE id = ?", [req.params.id]);
+      } catch (err) {}
+    }
+    res.json({ success: true });
+  });
+
   // --- DISCIPLINE LOGS ---
   app.get("/api/discipline-logs", async (req, res) => {
     const pool = getDbPool();
@@ -594,6 +621,17 @@ async function startServer() {
       } catch (err) {
         // Saved in JSON store
       }
+    }
+    res.json({ success: true });
+  });
+
+  app.delete("/api/discipline-logs/:id", async (req, res) => {
+    deleteJsonDisciplineLog(req.params.id);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM discipline_logs WHERE id = ?", [req.params.id]);
+      } catch (err) {}
     }
     res.json({ success: true });
   });
