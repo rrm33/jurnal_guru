@@ -10,7 +10,6 @@ export function getDbPool(): mysql.Pool | null {
 
   // Only attempt connection if host and db name are defined
   if (!rawHost || !dbName) {
-    console.warn("MySQL configuration missing (DB_HOST or DB_NAME not set).");
     return null;
   }
 
@@ -61,7 +60,7 @@ export async function testDbConnectionDetailed(): Promise<{ connected: boolean; 
     connection.release();
     return { connected: true, host, database, user };
   } catch (err: any) {
-    console.error("[MySQL] Connection check failed:", err);
+    console.info("[MySQL] Connection test note:", err.code || err.message || "Disconnected");
     let detailedError = `[${err.code || 'UNKNOWN_ERROR'}] ${err.message || String(err)}`;
     
     if (err.code === 'ECONNREFUSED') {

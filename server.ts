@@ -71,8 +71,15 @@ async function startServer() {
 
   // Function to initialize MySQL tables automatically
   async function initDbTables() {
+    if (!process.env.DB_HOST || !process.env.DB_NAME) {
+      return { success: false, mode: "json_server" };
+    }
+    const connected = await isDbConnected();
+    if (!connected) {
+      return { success: false, mode: "json_server" };
+    }
     const pool = getDbPool();
-    if (!pool) return false;
+    if (!pool) return { success: false, mode: "json_server" };
     try {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS teacher_profile (
@@ -226,7 +233,7 @@ async function startServer() {
         const [rows]: any = await pool.query("SELECT name, nip, school, subjectGroup FROM teacher_profile LIMIT 1");
         if (rows && rows.length > 0) return res.json(rows[0]);
       } catch (err) {
-        console.warn("[MySQL] teacher-profile fetch failed, falling back to JSON store");
+        // Fallback to JSON store silently if MySQL is offline or not created
       }
     }
     res.json(getJsonTeacherProfile());
@@ -250,7 +257,7 @@ async function startServer() {
           ]);
         }
       } catch (err) {
-        console.warn("[MySQL] teacher-profile save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true, profile });
@@ -264,7 +271,7 @@ async function startServer() {
         const [rows]: any = await pool.query("SELECT id, name, nisn, className, gender FROM students");
         if (rows && rows.length > 0) return res.json(rows);
       } catch (err) {
-        console.warn("[MySQL] students fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonStudents());
@@ -281,7 +288,7 @@ async function startServer() {
           id, name, nisn, className, gender
         ]);
       } catch (err) {
-        console.warn("[MySQL] student save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
@@ -294,7 +301,7 @@ async function startServer() {
       try {
         await pool.query("DELETE FROM students WHERE id = ?", [req.params.id]);
       } catch (err) {
-        console.warn("[MySQL] student delete failed");
+        // Handled in JSON store
       }
     }
     res.json({ success: true });
@@ -314,7 +321,7 @@ async function startServer() {
           return res.json(formatted);
         }
       } catch (err) {
-        console.warn("[MySQL] lesson-plans fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonLessonPlans());
@@ -336,7 +343,7 @@ async function startServer() {
           lp.taskTitle || null, lp.taskDescription || null, lp.taskMaxPoints || 100, lp.taskDeadline || null
         ]);
       } catch (err) {
-        console.warn("[MySQL] lesson-plan save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
@@ -349,7 +356,7 @@ async function startServer() {
       try {
         await pool.query("DELETE FROM lesson_plans WHERE id = ?", [req.params.id]);
       } catch (err) {
-        console.warn("[MySQL] lesson-plan delete failed");
+        // Handled in JSON store
       }
     }
     res.json({ success: true });
@@ -363,7 +370,7 @@ async function startServer() {
         const [rows]: any = await pool.query("SELECT * FROM attendance");
         if (rows && rows.length > 0) return res.json(rows);
       } catch (err) {
-        console.warn("[MySQL] attendance fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonAttendance());
@@ -381,7 +388,7 @@ async function startServer() {
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `, [id, date, className, studentId, status, notes || null, lessonPlanId || null]);
       } catch (err) {
-        console.warn("[MySQL] attendance save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
@@ -402,7 +409,7 @@ async function startServer() {
             `, [item.id, item.date, item.className, item.studentId, item.status, item.notes || null, item.lessonPlanId || null]);
           }
         } catch (err) {
-          console.warn("[MySQL] bulk attendance save failed, saved in JSON store");
+          // Saved in JSON store
         }
       }
     }
@@ -423,7 +430,7 @@ async function startServer() {
           return res.json(formatted);
         }
       } catch (err) {
-        console.warn("[MySQL] materials fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonMaterials());
@@ -440,7 +447,7 @@ async function startServer() {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, [m.id, m.className, m.lessonPlanId || null, m.title, m.content, m.category, m.createdAt, m.file ? JSON.stringify(m.file) : null]);
       } catch (err) {
-        console.warn("[MySQL] material save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
@@ -453,7 +460,7 @@ async function startServer() {
       try {
         await pool.query("DELETE FROM materials WHERE id = ?", [req.params.id]);
       } catch (err) {
-        console.warn("[MySQL] material delete failed");
+        // Handled in JSON store
       }
     }
     res.json({ success: true });
@@ -467,7 +474,7 @@ async function startServer() {
         const [rows]: any = await pool.query("SELECT * FROM tasks");
         if (rows && rows.length > 0) return res.json(rows);
       } catch (err) {
-        console.warn("[MySQL] tasks fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonTasks());
@@ -484,7 +491,7 @@ async function startServer() {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, [t.id, t.className, t.title, t.description, t.maxPoints || 100, t.deadline, t.createdAt, t.lessonPlanId || null]);
       } catch (err) {
-        console.warn("[MySQL] task save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
@@ -503,7 +510,7 @@ async function startServer() {
           return res.json(formatted);
         }
       } catch (err) {
-        console.warn("[MySQL] task-submissions fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonTaskSubmissions());
@@ -523,7 +530,7 @@ async function startServer() {
           s.studentAnswerFile ? JSON.stringify(s.studentAnswerFile) : null
         ]);
       } catch (err) {
-        console.warn("[MySQL] task submission save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
@@ -537,7 +544,7 @@ async function startServer() {
         const [rows]: any = await pool.query("SELECT * FROM development_progress");
         if (rows && rows.length > 0) return res.json(rows);
       } catch (err) {
-        console.warn("[MySQL] dev progress fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonDevelopmentProgress());
@@ -554,7 +561,7 @@ async function startServer() {
           VALUES (?, ?, ?, ?, ?, ?)
         `, [p.id, p.studentId, p.date, p.aspect, p.status, p.notes]);
       } catch (err) {
-        console.warn("[MySQL] dev progress save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
@@ -568,7 +575,7 @@ async function startServer() {
         const [rows]: any = await pool.query("SELECT * FROM discipline_logs");
         if (rows && rows.length > 0) return res.json(rows);
       } catch (err) {
-        console.warn("[MySQL] discipline logs fetch failed, falling back to JSON store");
+        // Fallback to JSON store
       }
     }
     res.json(getJsonDisciplineLogs());
@@ -585,7 +592,7 @@ async function startServer() {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, [d.id, d.studentId, d.date, d.type, d.category, d.points, d.actionTaken || null, d.notes || null]);
       } catch (err) {
-        console.warn("[MySQL] discipline log save failed, saved in JSON store");
+        // Saved in JSON store
       }
     }
     res.json({ success: true });
