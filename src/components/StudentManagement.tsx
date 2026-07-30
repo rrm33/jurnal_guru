@@ -29,6 +29,7 @@ interface StudentManagementProps {
   onAddClass: (className: string) => void;
   onUpdateClass: (oldClassName: string, newClassName: string) => void;
   onDeleteClass: (className: string) => void;
+  onSelectStudentPhoto?: (student: Student) => void;
 }
 
 export default function StudentManagement({
@@ -40,7 +41,8 @@ export default function StudentManagement({
   onBulkImport,
   onAddClass,
   onUpdateClass,
-  onDeleteClass
+  onDeleteClass,
+  onSelectStudentPhoto
 }: StudentManagementProps) {
   const [activeSubSection, setActiveSubSection] = useState<"siswa" | "kelas">("siswa");
   
@@ -502,17 +504,23 @@ export default function StudentManagement({
                     <td className="py-3 px-4.5 text-slate-400 font-mono">{idx + 1}</td>
                     <td className="py-3 px-4.5">
                       <div className="flex items-center gap-2.5">
-                        {student.photoUrl ? (
-                          <img
-                            src={student.photoUrl}
-                            alt={student.name}
-                            className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
-                            {student.name.charAt(0)}
-                          </div>
-                        )}
+                        <button
+                          onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(student)}
+                          className="shrink-0 cursor-pointer group"
+                          title="Klik untuk pratinjau foto siswa"
+                        >
+                          {student.photoUrl ? (
+                            <img
+                              src={student.photoUrl}
+                              alt={student.name}
+                              className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
+                              {student.name.charAt(0)}
+                            </div>
+                          )}
+                        </button>
                         <span className="font-semibold text-natural-dark text-xs">{student.name}</span>
                       </div>
                     </td>

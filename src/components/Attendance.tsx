@@ -15,6 +15,7 @@ interface AttendanceProps {
   lessonPlans: LessonPlan[];
   initialLessonPlanId?: string;
   onClearInitialLessonPlanId?: () => void;
+  onSelectStudentPhoto?: (student: Student) => void;
 }
 
 export default function AttendanceTracker({
@@ -24,7 +25,8 @@ export default function AttendanceTracker({
   classes,
   lessonPlans,
   initialLessonPlanId,
-  onClearInitialLessonPlanId
+  onClearInitialLessonPlanId,
+  onSelectStudentPhoto
 }: AttendanceProps) {
   const [selectedClass, setSelectedClass] = useState<string>(classes[0] || "XI RPL 1");
   // Set date default to today (YYYY-MM-DD)
@@ -350,13 +352,19 @@ export default function AttendanceTracker({
                       <td className="py-3.5 px-4.5 font-mono text-xs text-slate-400">{idx + 1}</td>
                       <td className="py-3.5 px-4.5">
                         <div className="flex items-center gap-2.5">
-                          {student.photoUrl ? (
-                            <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
-                              {student.name.charAt(0)}
-                            </div>
-                          )}
+                          <button
+                            onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(student)}
+                            className="shrink-0 cursor-pointer group"
+                            title="Klik untuk pratinjau foto siswa"
+                          >
+                            {student.photoUrl ? (
+                              <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
+                                {student.name.charAt(0)}
+                              </div>
+                            )}
+                          </button>
                           <div>
                             <span className="font-semibold text-xs text-natural-dark block">{student.name}</span>
                             <span className="text-[10px] text-slate-400 font-mono">ID: {student.id}</span>

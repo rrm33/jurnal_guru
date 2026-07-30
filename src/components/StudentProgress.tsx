@@ -15,6 +15,7 @@ interface StudentProgressProps {
   initialProgressClass?: string;
   initialProgressTaskId?: string;
   onClearInitialProgress?: () => void;
+  onSelectStudentPhoto?: (student: Student) => void;
 }
 
 export default function StudentProgress({
@@ -28,7 +29,8 @@ export default function StudentProgress({
   classes,
   initialProgressClass,
   initialProgressTaskId,
-  onClearInitialProgress
+  onClearInitialProgress,
+  onSelectStudentPhoto
 }: StudentProgressProps) {
   const [activeTab, setActiveTab] = useState<"tasks" | "development">("tasks");
   const [selectedClass, setSelectedClass] = useState<string>(classes[0] || "XI RPL 1");
@@ -280,8 +282,25 @@ export default function StudentProgress({
                       return (
                         <tr key={student.id} className="hover:bg-[#FBFBFA]/30 transition-colors text-xs">
                           <td className="py-4 px-4.5">
-                            <span className="font-semibold text-natural-dark block">{student.name}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">NISN: {student.nisn}</span>
+                            <div className="flex items-center gap-2.5">
+                              <button
+                                onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(student)}
+                                className="shrink-0 cursor-pointer group"
+                                title="Klik untuk lihat foto besar"
+                              >
+                                {student.photoUrl ? (
+                                  <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    {student.name.charAt(0)}
+                                  </div>
+                                )}
+                              </button>
+                              <div>
+                                <span className="font-semibold text-natural-dark block">{student.name}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">NISN: {student.nisn}</span>
+                              </div>
+                            </div>
                             
                             {submission?.studentAnswerText && (
                               <div className="mt-1.5 p-2 bg-[#FBFBFA] rounded-lg border border-natural-border shadow-3xs max-w-xs">

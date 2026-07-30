@@ -12,7 +12,9 @@ import {
   X,
   User,
   GraduationCap,
-  Users
+  Users,
+  LogOut,
+  KeyRound
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -27,7 +29,8 @@ import {
   DevelopmentProgress, 
   DisciplineLog, 
   TeacherProfile,
-  AttendanceStatus
+  AttendanceStatus,
+  UserAccount
 } from "./types";
 
 // Data & Helpers
@@ -41,6 +44,7 @@ import {
   INITIAL_TASK_SUBMISSIONS, 
   INITIAL_DEVELOPMENT_PROGRESS, 
   INITIAL_DISCIPLINE_LOGS,
+  INITIAL_USER_ACCOUNTS,
   loadData,
   saveData
 } from "./data";
@@ -56,10 +60,28 @@ import Discipline from "./components/Discipline";
 import GradeRecap from "./components/GradeRecap";
 import BackupData from "./components/BackupData";
 import StudentPortal from "./components/StudentPortal";
+import LoginScreen from "./components/LoginScreen";
+import UserManagement from "./components/UserManagement";
+import PhotoModal from "./components/PhotoModal";
 
-type TabID = "dashboard" | "rpp" | "attendance" | "students" | "progress" | "discipline" | "grades" | "backup";
+type TabID = "dashboard" | "rpp" | "attendance" | "students" | "progress" | "discipline" | "grades" | "users" | "backup";
 
 export default function App() {
+  // --- AUTH SESSION STATE ---
+  const [authSession, setAuthSession] = useState<{
+    isAuthenticated: boolean;
+    role: "guru" | "siswa";
+    studentData?: Student;
+  } | null>(() => loadData("app_auth_session", null));
+
+  // --- USER ACCOUNTS STATE ---
+  const [users, setUsers] = useState<UserAccount[]>(() => 
+    loadData("user_accounts", INITIAL_USER_ACCOUNTS)
+  );
+
+  // --- LIGHTBOX PHOTO MODAL STATE ---
+  const [selectedPhotoStudent, setSelectedPhotoStudent] = useState<Student | null>(null);
+
   // --- DATABASE STATE CORE ---
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>(() => 
     loadData("teacher_profile", DEFAULT_TEACHER_PROFILE)
@@ -113,6 +135,32 @@ export default function App() {
   useEffect(() => { saveData("development_logs", developmentLogs); }, [developmentLogs]);
   useEffect(() => { saveData("discipline_logs", disciplineLogs); }, [disciplineLogs]);
   useEffect(() => { saveData("exam_grades", examGrades); }, [examGrades]);
+  useEffect(() => { saveData("user_accounts", users); }, [users]);
+  useEffect(() => { saveData("app_auth_session", authSession); }, [authSession]);
+
+  // --- AUTH & USER HANDLERS ---
+  const handleLoginSuccess = (role: "guru" | "siswa", studentData?: Student) => {
+    const session = { isAuthenticated: true, role, studentData };
+    setAuthSession(session);
+    saveData("app_auth_session", session);
+  };
+
+  const handleLogout = () => {
+    setAuthSession(null);
+    localStorage.removeItem("app_auth_session");
+  };
+
+  const handleAddUser = (user: UserAccount) => {
+    setUsers(prev => [user, ...prev]);
+  };
+
+  const handleUpdateUser = (updatedUser: UserAccount) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== userId));
+  };
 
   // --- INITIAL & PERIODIC BACKEND SYNC (MULTI-DEVICE) ---
   useEffect(() => {
@@ -617,8 +665,22 @@ export default function App() {
     { id: "progress", label: "Nilai & Progres Siswa", icon: Award },
     { id: "discipline", label: "Kedisiplinan & Sikap", icon: ShieldAlert },
     { id: "grades", label: "Rekap Nilai Akhir", icon: Percent },
+    { id: "users", label: "Akses & User Accounts", icon: KeyRound },
     { id: "backup", label: "Backup & Hosting", icon: HardDrive }
   ] as const;
+
+  // --- UNAUTHENTICATED ROUTE GUARD ---
+  if (!authSession || !authSession.isAuthenticated) {
+    return (
+      <LoginScreen 
+        students={students} 
+        onLoginSuccess={handleLoginSuccess} 
+      />
+    );
+  }
+
+  const isTeacher = authSession.role === "guru";
+  const loggedStudent = authSession.studentData || students[0];
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-text flex flex-col font-sans">
@@ -626,13 +688,15 @@ export default function App() {
       {/* Upper Navigation Header (Visible on Screen only) */}
       <header className="bg-white border-b border-natural-border text-natural-text py-4 px-6 sticky top-0 z-50 flex items-center justify-between shadow-xs print:hidden">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-1.5 hover:bg-natural-bg rounded-lg lg:hidden cursor-pointer text-natural-dark"
-            title="Menu"
-          >
-            <Menu size={20} />
-          </button>
+          {isTeacher && (
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-1.5 hover:bg-natural-bg rounded-lg lg:hidden cursor-pointer text-natural-dark"
+              title="Menu"
+            >
+              <Menu size={20} />
+            </button>
+          )}
           
           <div className="flex items-center gap-2">
             <div className="bg-natural-sage p-2 rounded-xl text-white">
@@ -640,52 +704,65 @@ export default function App() {
             </div>
             <div>
               <h1 className="font-bold text-sm tracking-tight sm:text-base text-natural-dark">Jurnal Mapel RPL</h1>
-              <p className="text-[10px] text-natural-sage font-semibold tracking-wide font-mono">SMKN 6 JEMBER • RPL</p>
+              <p className="text-[10px] text-natural-sage font-semibold tracking-wide font-mono">
+                SMKN 6 JEMBER • {isTeacher ? "MODE GURU" : "PORTAL SISWA"}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Role Switcher Toggle */}
-        <div className="flex items-center gap-1 bg-natural-accent border border-natural-border p-1 rounded-xl text-xs font-bold shrink-0">
-          <button
-            onClick={() => setUserRole("guru")}
-            className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-              userRole === "guru"
-                ? "bg-natural-mid text-white shadow-3xs font-bold"
-                : "text-natural-dark hover:bg-white/45"
-            }`}
-          >
-            Guru
-          </button>
-          <button
-            onClick={() => setUserRole("siswa")}
-            className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-              userRole === "siswa"
-                ? "bg-natural-mid text-white shadow-3xs font-bold"
-                : "text-natural-dark hover:bg-white/45"
-            }`}
-          >
-            Siswa Portal
-          </button>
-        </div>
+        {/* User Badge & Logout Button */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 bg-natural-bg border border-natural-border px-3.5 py-1.5 rounded-xl text-xs">
+            {isTeacher ? (
+              <>
+                <div className="bg-natural-sage text-white p-1.5 rounded-lg">
+                  <User size={15} />
+                </div>
+                <div className="hidden sm:block text-left">
+                  <p className="font-bold text-natural-dark text-xs leading-none">{teacherProfile.name}</p>
+                  <p className="text-[9px] text-slate-500 mt-1">NIP: {teacherProfile.nip}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={() => setSelectedPhotoStudent(loggedStudent)}
+                  className="cursor-pointer shrink-0"
+                  title="Klik untuk lihat foto"
+                >
+                  {loggedStudent.photoUrl ? (
+                    <img src={loggedStudent.photoUrl} alt={loggedStudent.name} className="w-7 h-7 rounded-full object-cover border border-natural-border" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-natural-sage text-white font-bold text-xs flex items-center justify-center">
+                      {loggedStudent.name.charAt(0)}
+                    </div>
+                  )}
+                </button>
+                <div className="hidden sm:block text-left">
+                  <p className="font-bold text-natural-dark text-xs leading-none">{loggedStudent.name}</p>
+                  <p className="text-[9px] text-slate-500 mt-1">NISN: {loggedStudent.nisn} • {loggedStudent.className}</p>
+                </div>
+              </>
+            )}
+          </div>
 
-        {/* Profile Card */}
-        <div className="flex items-center gap-3 bg-natural-bg border border-natural-border px-3.5 py-1.5 rounded-xl text-xs">
-          <div className="bg-natural-sage text-white p-1.5 rounded-lg">
-            <User size={15} />
-          </div>
-          <div className="hidden sm:block text-left">
-            <p className="font-bold text-natural-dark text-xs leading-none">{teacherProfile.name}</p>
-            <p className="text-[9px] text-slate-500 mt-1">NIP: {teacherProfile.nip}</p>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-3xs"
+            title="Keluar / Logout"
+          >
+            <LogOut size={14} />
+            <span className="hidden sm:inline">Keluar</span>
+          </button>
         </div>
       </header>
 
       {/* Main Body - Split Layout */}
       <div className="flex-1 flex relative">
         
-        {/* Left Sidebar Navigation Drawer */}
-        {userRole === "guru" && (
+        {/* Left Sidebar Navigation Drawer (Teacher Only) */}
+        {isTeacher && (
           <aside className={`
             bg-natural-dark text-natural-light w-64 flex flex-col py-6 border-r border-natural-mid shrink-0
             absolute lg:relative top-0 bottom-0 left-0 z-40 transition-transform duration-300 lg:translate-x-0 print:hidden
@@ -742,7 +819,7 @@ export default function App() {
         )}
 
         {/* Overlay background for mobile sidebar */}
-        {isSidebarOpen && userRole === "guru" && (
+        {isSidebarOpen && isTeacher && (
           <div 
             onClick={() => setIsSidebarOpen(false)}
             className="fixed inset-0 bg-black/40 z-30 lg:hidden print:hidden"
@@ -751,9 +828,9 @@ export default function App() {
 
         {/* Right main workspace viewport */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full transition-all print:p-0 print:max-w-none print:shadow-none print:bg-white overflow-hidden">
-          {userRole === "siswa" ? (
+          {!isTeacher ? (
             <StudentPortal
-              loggedStudent={students[0]}
+              loggedStudent={loggedStudent}
               students={students}
               lessonPlans={lessonPlans}
               attendance={attendance}
@@ -762,7 +839,8 @@ export default function App() {
               disciplineLogs={disciplineLogs}
               onSaveSubmission={handleSaveSubmission}
               onUpdateStudentPhoto={handleUpdateStudentPhoto}
-              onLogout={() => setUserRole("guru")}
+              onLogout={handleLogout}
+              onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
             />
           ) : (
             <AnimatePresence mode="wait">
@@ -804,6 +882,7 @@ export default function App() {
                   lessonPlans={lessonPlans}
                   initialLessonPlanId={initialLessonPlanId}
                   onClearInitialLessonPlanId={() => setInitialLessonPlanId("")}
+                  onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
                 />
               )}
 
@@ -818,6 +897,7 @@ export default function App() {
                   onAddClass={handleAddClass}
                   onUpdateClass={handleUpdateClass}
                   onDeleteClass={handleDeleteClass}
+                  onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
                 />
               )}
 
@@ -837,6 +917,7 @@ export default function App() {
                     setInitialProgressClass("");
                     setInitialProgressTaskId("");
                   }}
+                  onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
                 />
               )}
 
@@ -859,6 +940,17 @@ export default function App() {
                   examGrades={examGrades}
                   onSaveExamGrades={handleSaveExamGrades}
                   classes={classes}
+                  onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
+                />
+              )}
+
+              {activeTab === "users" && (
+                <UserManagement 
+                  users={users}
+                  students={students}
+                  onAddUser={handleAddUser}
+                  onUpdateUser={handleUpdateUser}
+                  onDeleteUser={handleDeleteUser}
                 />
               )}
 
@@ -874,6 +966,12 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Global Student Photo Preview Lightbox Modal */}
+      <PhotoModal 
+        student={selectedPhotoStudent} 
+        onClose={() => setSelectedPhotoStudent(null)} 
+      />
 
       {/* Footer (Screen only) */}
       <footer className="bg-white border-t border-slate-100 py-3 px-6 text-center text-slate-400 text-[10px] print:hidden">

@@ -1,4 +1,4 @@
-import { Student, LessonPlan, Attendance, Material, Task, TaskSubmission, DevelopmentProgress, DisciplineLog, TeacherProfile, AttendanceStatus } from "./types";
+import { Student, LessonPlan, Attendance, Material, Task, TaskSubmission, DevelopmentProgress, DisciplineLog, TeacherProfile, AttendanceStatus, UserAccount } from "./types";
 import { createSampleExcelDataUrl, createSampleImageDataUrl, createSamplePdfDataUrl } from "./lib/fileSampleUtils";
 
 export const DEFAULT_TEACHER_PROFILE: TeacherProfile = {
@@ -377,6 +377,35 @@ export const INITIAL_DISCIPLINE_LOGS: DisciplineLog[] = [
     points: 10,
     actionTaken: "Pujian di rekap jurnal",
     notes: "Inisiatif merapikan kabel keyboard, mouse, dan kursi lab di baris belakang agar terlihat tertata rapi."
+  }
+];
+
+export const INITIAL_USER_ACCOUNTS: UserAccount[] = [
+  {
+    id: "usr_guru_1",
+    username: "guru",
+    name: "Ryan Maulana, S.Kom.",
+    role: "guru",
+    nip: "19940823 202112 1 002",
+    password: "password"
+  },
+  {
+    id: "usr_std_101",
+    username: "0074128910",
+    name: "Aditya Pratama Putra",
+    role: "siswa",
+    studentId: "std_101",
+    className: "XI RPL 1",
+    password: "123"
+  },
+  {
+    id: "usr_std_102",
+    username: "0075192831",
+    name: "Ahmad Fauzi",
+    role: "siswa",
+    studentId: "std_102",
+    className: "XI RPL 1",
+    password: "123"
   }
 ];
 

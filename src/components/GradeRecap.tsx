@@ -10,6 +10,7 @@ interface GradeRecapProps {
   examGrades: { [studentId: string]: { uts: number; uas: number } };
   onSaveExamGrades: (studentId: string, uts: number, uas: number) => void;
   classes: string[];
+  onSelectStudentPhoto?: (student: Student) => void;
 }
 
 export default function GradeRecap({
@@ -19,7 +20,8 @@ export default function GradeRecap({
   disciplineLogs,
   examGrades,
   onSaveExamGrades,
-  classes
+  classes,
+  onSelectStudentPhoto
 }: GradeRecapProps) {
   const [selectedClass, setSelectedClass] = useState<string>(classes[0] || "XI RPL 1");
   const [searchTerm, setSearchTerm] = useState("");
@@ -398,13 +400,19 @@ export default function GradeRecap({
                       <td className="py-3.5 px-4 font-mono text-slate-400">{index + 1}</td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
-                          {item.student.photoUrl ? (
-                            <img src={item.student.photoUrl} alt={item.name} className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
-                              {item.name.charAt(0)}
-                            </div>
-                          )}
+                          <button
+                            onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(item.student)}
+                            className="shrink-0 cursor-pointer group"
+                            title="Klik untuk pratinjau foto siswa"
+                          >
+                            {item.student.photoUrl ? (
+                              <img src={item.student.photoUrl} alt={item.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
+                                {item.name.charAt(0)}
+                              </div>
+                            )}
+                          </button>
                           <span className="font-semibold text-natural-dark block">{item.name}</span>
                         </div>
                       </td>

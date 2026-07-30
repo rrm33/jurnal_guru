@@ -38,6 +38,7 @@ interface StudentPortalProps {
   onSaveSubmission: (submission: TaskSubmission) => void;
   onUpdateStudentPhoto: (studentId: string, photoUrl: string) => void;
   onLogout: () => void;
+  onSelectStudentPhoto?: (student: Student) => void;
 }
 
 export default function StudentPortal({
@@ -50,7 +51,8 @@ export default function StudentPortal({
   disciplineLogs,
   onSaveSubmission,
   onUpdateStudentPhoto,
-  onLogout
+  onLogout,
+  onSelectStudentPhoto
 }: StudentPortalProps) {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [photoSuccessMsg, setPhotoSuccessMsg] = useState("");
@@ -255,17 +257,23 @@ export default function StudentPortal({
         <div className="flex items-center gap-4">
           {/* Student Profile Photo with Camera overlay */}
           <div className="relative group shrink-0">
-            {loggedStudent.photoUrl ? (
-              <img
-                src={loggedStudent.photoUrl}
-                alt={loggedStudent.name}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-natural-border shadow-xs"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-natural-sage text-white font-bold text-xl flex items-center justify-center border-2 border-natural-border shadow-xs">
-                {loggedStudent.name.charAt(0)}
-              </div>
-            )}
+            <button
+              onClick={() => onSelectStudentPhoto ? onSelectStudentPhoto(loggedStudent) : photoInputRef.current?.click()}
+              className="cursor-pointer block transition-transform hover:scale-105"
+              title="Klik untuk melihat foto besar"
+            >
+              {loggedStudent.photoUrl ? (
+                <img
+                  src={loggedStudent.photoUrl}
+                  alt={loggedStudent.name}
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-natural-border shadow-xs"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-natural-sage text-white font-bold text-xl flex items-center justify-center border-2 border-natural-border shadow-xs">
+                  {loggedStudent.name.charAt(0)}
+                </div>
+              )}
+            </button>
             
             <button
               onClick={() => photoInputRef.current?.click()}
