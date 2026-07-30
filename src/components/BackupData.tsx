@@ -70,7 +70,11 @@ export default function BackupData({
       }
       const data = await res.json();
       if (res.ok && data.success) {
-        setInitMessage("✅ Tabel MySQL berhasil dibuat dan disinkronkan!");
+        if (data.mode === "json_server") {
+          setInitMessage(`ℹ️ ${data.message || "Server JSON Storage aktif. Kredensial MySQL belum dikonfigurasi di file .env"}`);
+        } else {
+          setInitMessage(`✅ ${data.message || "Tabel MySQL berhasil dibuat dan disinkronkan!"}`);
+        }
         checkDbHealth();
       } else {
         setInitMessage(`❌ Gagal: ${data.error || "Gagal menginisialisasi MySQL"}`);

@@ -25,7 +25,7 @@ interface ProfileProps {
   onUpdateTeacherPassword?: (newPassword: string) => void;
   onUpdateStudentPhoto?: (studentId: string, photoUrl: string) => void;
   onUpdateStudentPassword?: (studentId: string, newPassword: string) => void;
-  onSelectPhotoPreview?: (student: Student) => void;
+  onSelectPhotoPreview?: (data: any) => void;
 }
 
 export default function Profile({
@@ -56,29 +56,71 @@ export default function Profile({
   const [passError, setPassError] = useState("");
   const [passSuccess, setPassSuccess] = useState("");
 
-  // Handle Photo File Upload
+  // Handle Photo File Upload with Canvas Compression
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Ukuran foto maksimal 5 MB.");
+    if (!file.type.startsWith("image/")) {
+      alert("Harap pilih file gambar (.jpg, .png, .webp).");
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      if (role === "guru") {
-        setTeacherPhotoUrl(base64);
-        if (onUpdateTeacherProfile && teacherProfile) {
-          onUpdateTeacherProfile({ ...teacherProfile, photoUrl: base64 });
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const maxSize = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
         }
-      } else if (role === "siswa" && loggedStudent && onUpdateStudentPhoto) {
-        onUpdateStudentPhoto(loggedStudent.id, base64);
-      }
+
+        canvas.width = width;
+        canvas.height = height;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+
+          if (role === "guru") {
+            setTeacherPhotoUrl(compressedDataUrl);
+            if (onUpdateTeacherProfile && teacherProfile) {
+              onUpdateTeacherProfile({ ...teacherProfile, photoUrl: compressedDataUrl });
+            }
+          } else if (role === "siswa" && loggedStudent && onUpdateStudentPhoto) {
+            onUpdateStudentPhoto(loggedStudent.id, compressedDataUrl);
+          }
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handlePreviewPhoto = () => {
+    if (!onSelectPhotoPreview) return;
+    if (role === "guru") {
+      onSelectPhotoPreview({
+        name: teacherName,
+        subtitle: `NIP: ${teacherNip} • ${teacherSchool}`,
+        photoUrl: teacherPhotoUrl,
+        roleLabel: "Guru Pengajar"
+      });
+    } else if (loggedStudent) {
+      onSelectPhotoPreview(loggedStudent);
+    }
   };
 
   // Handle Save Teacher Info
@@ -157,9 +199,19 @@ export default function Profile({
         <div className="relative group shrink-0">
           {role === "guru" ? (
             teacherPhotoUrl ? (
-              <img src={teacherPhotoUrl} alt={teacherName} className="w-24 h-24 rounded-3xl object-cover border-2 border-natural-border shadow-xs" />
+              <img 
+                src={teacherPhotoUrl} 
+                alt={teacherName} 
+                className="w-24 h-24 rounded-3xl object-cover border-2 border-natural-border shadow-xs cursor-pointer hover:opacity-90 transition-opacity" 
+                onClick={handlePreviewPhoto}
+                title="Klik untuk melihat foto besar"
+              />
             ) : (
-              <div className="w-24 h-24 rounded-3xl bg-natural-dark text-white font-bold text-3xl flex items-center justify-center border-2 border-natural-border shadow-xs">
+              <div 
+                onClick={handlePreviewPhoto}
+                className="w-24 h-24 rounded-3xl bg-natural-dark text-white font-bold text-3xl flex items-center justify-center border-2 border-natural-border shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
+                title="Klik untuk melihat foto"
+              >
                 {teacherName.charAt(0)}
               </div>
             )
@@ -168,11 +220,16 @@ export default function Profile({
               <img 
                 src={loggedStudent.photoUrl} 
                 alt={loggedStudent.name} 
-                className="w-24 h-24 rounded-3xl object-cover border-2 border-natural-border shadow-xs cursor-pointer hover:opacity-90"
-                onClick={() => loggedStudent && onSelectPhotoPreview && onSelectPhotoPreview(loggedStudent)}
+                className="w-24 h-24 rounded-3xl object-cover border-2 border-natural-border shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={handlePreviewPhoto}
+                title="Klik untuk melihat foto besar"
               />
             ) : (
-              <div className="w-24 h-24 rounded-3xl bg-natural-sage text-white font-bold text-3xl flex items-center justify-center border-2 border-natural-border shadow-xs">
+              <div 
+                onClick={handlePreviewPhoto}
+                className="w-24 h-24 rounded-3xl bg-natural-sage text-white font-bold text-3xl flex items-center justify-center border-2 border-natural-border shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
+                title="Klik untuk melihat foto"
+              >
                 {loggedStudent?.name.charAt(0) || "S"}
               </div>
             )

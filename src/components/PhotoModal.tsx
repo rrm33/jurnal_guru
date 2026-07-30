@@ -3,13 +3,29 @@ import { X, Download, User, GraduationCap } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Student } from "../types";
 
+export interface PhotoPreviewData {
+  name: string;
+  subtitle: string;
+  photoUrl?: string;
+  roleLabel?: string;
+  genderLabel?: string;
+}
+
 interface PhotoModalProps {
-  student: Student | null;
+  student?: Student | PhotoPreviewData | null;
   onClose: () => void;
 }
 
 export default function PhotoModal({ student, onClose }: PhotoModalProps) {
   if (!student) return null;
+
+  // Determine if student object or custom photo preview data
+  const isStudentObj = "nisn" in student;
+  const name = student.name;
+  const subtitle = isStudentObj ? `NISN: ${(student as Student).nisn} • Kelas ${(student as Student).className}` : (student as PhotoPreviewData).subtitle;
+  const photoUrl = student.photoUrl;
+  const roleLabel = isStudentObj ? "Siswa RPL" : ((student as PhotoPreviewData).roleLabel || "Guru Pengajar");
+  const genderLabel = isStudentObj ? ((student as Student).gender === "L" ? "Laki-laki" : "Perempuan") : (student as PhotoPreviewData).genderLabel;
 
   return (
     <AnimatePresence>
@@ -28,26 +44,26 @@ export default function PhotoModal({ student, onClose }: PhotoModalProps) {
             <X size={18} />
           </button>
 
-          {/* Student Header */}
+          {/* User Header */}
           <div className="space-y-1 pt-2">
-            <h3 className="text-base font-extrabold text-natural-dark">{student.name}</h3>
+            <h3 className="text-base font-extrabold text-natural-dark">{name}</h3>
             <p className="text-xs text-natural-sage font-mono font-bold">
-              NISN: {student.nisn} • Kelas {student.className}
+              {subtitle}
             </p>
           </div>
 
           {/* Large Photo Frame */}
           <div className="relative mx-auto w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden border-2 border-natural-border bg-natural-bg shadow-inner flex items-center justify-center">
-            {student.photoUrl ? (
+            {photoUrl ? (
               <img 
-                src={student.photoUrl} 
-                alt={student.name} 
+                src={photoUrl} 
+                alt={name} 
                 className="w-full h-full object-cover"
               />
             ) : (
               <div className="flex flex-col items-center justify-center text-natural-sage space-y-2">
                 <div className="w-20 h-20 rounded-full bg-natural-sage/20 flex items-center justify-center text-2xl font-bold">
-                  {student.name.charAt(0)}
+                  {name.charAt(0)}
                 </div>
                 <span className="text-[11px] font-semibold text-slate-400">Belum ada foto profil</span>
               </div>
@@ -55,22 +71,24 @@ export default function PhotoModal({ student, onClose }: PhotoModalProps) {
           </div>
 
           {/* Badges / Details */}
-          <div className="flex items-center justify-center gap-2 text-xs">
+          <div className="flex items-center justify-center gap-2 text-xs flex-wrap">
             <span className="bg-natural-bg border border-natural-border px-3 py-1 rounded-full font-bold text-natural-dark flex items-center gap-1.5">
-              <GraduationCap size={14} className="text-natural-sage" />
-              <span>Siswa RPL</span>
+              {isStudentObj ? <GraduationCap size={14} className="text-natural-sage" /> : <User size={14} className="text-natural-sage" />}
+              <span>{roleLabel}</span>
             </span>
-            <span className="bg-natural-bg border border-natural-border px-3 py-1 rounded-full font-bold text-natural-dark">
-              {student.gender === "L" ? "Laki-laki" : "Perempuan"}
-            </span>
+            {genderLabel && (
+              <span className="bg-natural-bg border border-natural-border px-3 py-1 rounded-full font-bold text-natural-dark">
+                {genderLabel}
+              </span>
+            )}
           </div>
 
           {/* Action buttons */}
           <div className="pt-2 flex items-center justify-center gap-2">
-            {student.photoUrl && (
+            {photoUrl && (
               <a 
-                href={student.photoUrl} 
-                download={`Foto_${student.name.replace(/\s+/g, "_")}.jpg`}
+                href={photoUrl} 
+                download={`Foto_${name.replace(/\s+/g, "_")}.jpg`}
                 className="bg-natural-dark hover:bg-natural-mid text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
               >
                 <Download size={15} />

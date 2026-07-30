@@ -81,7 +81,7 @@ export default function App() {
   );
 
   // --- LIGHTBOX PHOTO MODAL STATE ---
-  const [selectedPhotoStudent, setSelectedPhotoStudent] = useState<Student | null>(null);
+  const [selectedPhotoStudent, setSelectedPhotoStudent] = useState<any>(null);
 
   // --- DATABASE STATE CORE ---
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>(() => 
@@ -508,7 +508,33 @@ export default function App() {
   };
 
   const handleUpdateStudentPhoto = (studentId: string, photoUrl: string) => {
-    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, photoUrl } : s));
+    let updatedStudentObj: Student | null = null;
+    setStudents(prev => {
+      const updated = prev.map(s => {
+        if (s.id === studentId) {
+          updatedStudentObj = { ...s, photoUrl };
+          return updatedStudentObj;
+        }
+        return s;
+      });
+      saveData("students", updated);
+      if (updatedStudentObj) {
+        saveItemToApi("students", updatedStudentObj);
+      }
+      return updated;
+    });
+
+    if (authSession && authSession.studentData && authSession.studentData.id === studentId) {
+      const updatedSession = {
+        ...authSession,
+        studentData: {
+          ...authSession.studentData,
+          photoUrl
+        }
+      };
+      setAuthSession(updatedSession);
+      saveData("app_auth_session", updatedSession);
+    }
   };
 
   const handleUpdateStudentPassword = (studentId: string, newPassword: string) => {
@@ -784,8 +810,30 @@ export default function App() {
           >
             {isTeacher ? (
               <>
-                <div className="bg-natural-sage text-white p-1.5 rounded-lg">
-                  <User size={15} />
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (teacherProfile.photoUrl) {
+                      setSelectedPhotoStudent({
+                        name: teacherProfile.name,
+                        subtitle: `NIP: ${teacherProfile.nip} • ${teacherProfile.school}`,
+                        photoUrl: teacherProfile.photoUrl,
+                        roleLabel: "Guru Pengajar"
+                      });
+                    } else {
+                      setActiveTab("profile");
+                    }
+                  }}
+                  className="shrink-0 cursor-pointer"
+                  title="Klik untuk melihat foto profil guru"
+                >
+                  {teacherProfile.photoUrl ? (
+                    <img src={teacherProfile.photoUrl} alt={teacherProfile.name} className="w-7 h-7 rounded-full object-cover border border-natural-border" />
+                  ) : (
+                    <div className="bg-natural-sage text-white p-1.5 rounded-lg">
+                      <User size={15} />
+                    </div>
+                  )}
                 </div>
                 <div className="hidden sm:block text-left">
                   <p className="font-bold text-natural-dark text-xs leading-none">{teacherProfile.name}</p>
@@ -1029,6 +1077,7 @@ export default function App() {
                   teacherProfile={teacherProfile}
                   onUpdateTeacherProfile={handleUpdateTeacherProfile}
                   onUpdateTeacherPassword={handleUpdateTeacherPassword}
+                  onSelectPhotoPreview={(data) => setSelectedPhotoStudent(data)}
                 />
               )}
 
