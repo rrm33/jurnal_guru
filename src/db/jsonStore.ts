@@ -23,6 +23,7 @@ interface JsonDbData {
   taskSubmissions: any[];
   developmentProgress: any[];
   disciplineLogs: any[];
+  examGrades: { [studentId: string]: { uts: number; uas: number } };
 }
 
 function getInitialDbData(): JsonDbData {
@@ -61,7 +62,29 @@ function getInitialDbData(): JsonDbData {
     tasks: [],
     taskSubmissions: [],
     developmentProgress: [],
-    disciplineLogs: []
+    disciplineLogs: [],
+    examGrades: {
+      "std_101": { uts: 80, uas: 82 },
+      "std_102": { uts: 80, uas: 82 },
+      "std_103": { uts: 80, uas: 82 },
+      "std_104": { uts: 80, uas: 82 },
+      "std_105": { uts: 80, uas: 82 },
+      "std_106": { uts: 80, uas: 82 },
+      "std_107": { uts: 80, uas: 82 },
+      "std_108": { uts: 80, uas: 82 },
+      "std_109": { uts: 80, uas: 82 },
+      "std_110": { uts: 80, uas: 82 },
+      "std_201": { uts: 80, uas: 82 },
+      "std_202": { uts: 80, uas: 82 },
+      "std_203": { uts: 80, uas: 82 },
+      "std_204": { uts: 80, uas: 82 },
+      "std_205": { uts: 80, uas: 82 },
+      "std_206": { uts: 80, uas: 82 },
+      "std_207": { uts: 80, uas: 82 },
+      "std_208": { uts: 80, uas: 82 },
+      "std_209": { uts: 80, uas: 82 },
+      "std_210": { uts: 80, uas: 82 }
+    }
   };
 }
 
@@ -80,7 +103,8 @@ export function readJsonDb(): JsonDbData {
           tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
           taskSubmissions: Array.isArray(parsed.taskSubmissions) ? parsed.taskSubmissions : [],
           developmentProgress: Array.isArray(parsed.developmentProgress) ? parsed.developmentProgress : [],
-          disciplineLogs: Array.isArray(parsed.disciplineLogs) ? parsed.disciplineLogs : []
+          disciplineLogs: Array.isArray(parsed.disciplineLogs) ? parsed.disciplineLogs : [],
+          examGrades: parsed.examGrades || {}
         };
       }
     }
@@ -307,6 +331,26 @@ export function deleteJsonDisciplineLog(id: string) {
   return true;
 }
 
+export function getJsonExamGrades() {
+  const db = readJsonDb();
+  return db.examGrades || {};
+}
+
+export function saveJsonExamGrade(studentId: string, uts: number, uas: number) {
+  const db = readJsonDb();
+  if (!db.examGrades) db.examGrades = {};
+  db.examGrades[studentId] = { uts, uas };
+  writeJsonDb(db);
+  return db.examGrades[studentId];
+}
+
+export function saveJsonExamGradesBulk(examGradesMap: { [studentId: string]: { uts: number; uas: number } }) {
+  const db = readJsonDb();
+  db.examGrades = { ...db.examGrades, ...examGradesMap };
+  writeJsonDb(db);
+  return db.examGrades;
+}
+
 // Bulk sync endpoint helper
 export function syncAllDataToJson(allData: Partial<JsonDbData>) {
   const db = readJsonDb();
@@ -319,6 +363,7 @@ export function syncAllDataToJson(allData: Partial<JsonDbData>) {
   if (Array.isArray(allData.taskSubmissions) && allData.taskSubmissions.length > 0) db.taskSubmissions = allData.taskSubmissions;
   if (Array.isArray(allData.developmentProgress) && allData.developmentProgress.length > 0) db.developmentProgress = allData.developmentProgress;
   if (Array.isArray(allData.disciplineLogs) && allData.disciplineLogs.length > 0) db.disciplineLogs = allData.disciplineLogs;
+  if (allData.examGrades && Object.keys(allData.examGrades).length > 0) db.examGrades = allData.examGrades;
   writeJsonDb(db);
   return db;
 }

@@ -75,8 +75,8 @@ export default function StudentManagement({
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
       const matchesClass = selectedClass === "Semua Kelas" || student.className === selectedClass;
-      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            student.nisn.includes(searchQuery);
+      const matchesSearch = (student.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (student.nisn || "").includes(searchQuery);
       return matchesClass && matchesSearch;
     });
   }, [students, selectedClass, searchQuery]);

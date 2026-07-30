@@ -16,6 +16,7 @@ import {
   getJsonTaskSubmissions, saveJsonTaskSubmission,
   getJsonDevelopmentProgress, saveJsonDevelopmentProgress, deleteJsonDevelopmentProgress,
   getJsonDisciplineLogs, saveJsonDisciplineLog, deleteJsonDisciplineLog,
+  getJsonExamGrades, saveJsonExamGrade, saveJsonExamGradesBulk,
   syncAllDataToJson
 } from "./src/db/jsonStore.ts";
 
@@ -632,6 +633,21 @@ async function startServer() {
       try {
         await pool.query("DELETE FROM discipline_logs WHERE id = ?", [req.params.id]);
       } catch (err) {}
+    }
+    res.json({ success: true });
+  });
+
+  // --- EXAM GRADES ---
+  app.get("/api/exam-grades", (req, res) => {
+    res.json(getJsonExamGrades());
+  });
+
+  app.post("/api/exam-grades", (req, res) => {
+    const body = req.body;
+    if (body.studentId) {
+      saveJsonExamGrade(body.studentId, body.uts, body.uas);
+    } else if (typeof body === "object") {
+      saveJsonExamGradesBulk(body);
     }
     res.json({ success: true });
   });

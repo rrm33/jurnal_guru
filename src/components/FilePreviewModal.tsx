@@ -40,7 +40,7 @@ export default function FilePreviewModal({ file, isOpen, onClose }: FilePreviewM
   // Determine File Type Category
   const fileCategory = useMemo(() => {
     if (!file) return "unknown";
-    const name = file.name.toLowerCase();
+    const name = (file.name || "").toLowerCase();
     const dataUrl = (file.dataUrl || file.url || "").toLowerCase();
 
     if (
@@ -84,6 +84,7 @@ export default function FilePreviewModal({ file, isOpen, onClose }: FilePreviewM
 
   // Convert Data URL or URL to ArrayBuffer
   const getArrayBuffer = async (srcUrl: string): Promise<ArrayBuffer> => {
+    if (!srcUrl) return new ArrayBuffer(0);
     if (srcUrl.startsWith("data:")) {
       const base64Parts = srcUrl.split(",");
       const base64Data = base64Parts[1] || "";
@@ -102,6 +103,7 @@ export default function FilePreviewModal({ file, isOpen, onClose }: FilePreviewM
 
   // Convert Data URL or URL to Text
   const getTextFromSrc = async (srcUrl: string): Promise<string> => {
+    if (!srcUrl) return "";
     if (srcUrl.startsWith("data:")) {
       const base64Parts = srcUrl.split(",");
       if (base64Parts[0].includes(";base64")) {

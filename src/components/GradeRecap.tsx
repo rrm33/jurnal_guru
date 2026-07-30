@@ -126,8 +126,8 @@ export default function GradeRecap({
     // Apply client-side search query
     if (!searchTerm) return items;
     return items.filter(item => 
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      item.nisn.includes(searchTerm)
+      (item.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (item.nisn || "").includes(searchTerm)
     );
   }, [students, selectedClass, taskAveragesMap, attitudeScoresMap, examGrades, wTasks, wAttitude, wUts, wUas, kkm, searchTerm]);
 

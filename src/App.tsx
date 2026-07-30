@@ -100,7 +100,10 @@ export default function App() {
   });
 
   // --- SAVE HOOKS / EVENTS ---
-  useEffect(() => { saveData("teacher_profile", teacherProfile); }, [teacherProfile]);
+  useEffect(() => { 
+    saveData("teacher_profile", teacherProfile); 
+    saveItemToApi("teacher-profile", teacherProfile);
+  }, [teacherProfile]);
   useEffect(() => { saveData("students", students); }, [students]);
   useEffect(() => { saveData("lesson_plans", lessonPlans); }, [lessonPlans]);
   useEffect(() => { saveData("attendance", attendance); }, [attendance]);
@@ -141,6 +144,9 @@ export default function App() {
 
         const discLogs = await fetchFromApiOrLocal("discipline-logs", "discipline_logs", INITIAL_DISCIPLINE_LOGS);
         if (discLogs && discLogs.length > 0) setDisciplineLogs(discLogs);
+
+        const exGrades = await fetchFromApiOrLocal("exam-grades", "exam_grades", {});
+        if (exGrades && Object.keys(exGrades).length > 0) setExamGrades(exGrades);
       } catch (err) {
         console.log("Using LocalStorage fallback mode");
       }
@@ -253,23 +259,26 @@ export default function App() {
     setSubmissions(prev => {
       // Migrate any existing submissions for 'task_1' to the journal-synced task 'task_lp_01'
       const migrated = prev.map(sub => {
-        if (sub.taskId === "task_1") {
+        if (sub && sub.taskId === "task_1") {
           return {
             ...sub,
-            id: sub.id.replace("task_1", "task_lp_01"),
+            id: (sub.id || "").replace("task_1", "task_lp_01"),
             taskId: "task_lp_01"
           };
         }
         return sub;
-      }).filter(sub => sub.taskId !== "task_2"); // clean up obsolete task_2
+      }).filter(sub => sub && sub.taskId !== "task_2"); // clean up obsolete task_2
 
       const activeAutoTaskIds = generatedTasks.map(t => t.id);
       
       // Filter out auto-submissions that are for stale tasks
       const keptPrev = migrated.filter(sub => {
-        const isAutoTask = sub.id.startsWith("sub_task_lp_") || sub.id.includes("_lp_") || sub.taskId.startsWith("task_lp_");
+        if (!sub) return false;
+        const subId = sub.id || "";
+        const taskId = sub.taskId || "";
+        const isAutoTask = subId.startsWith("sub_task_lp_") || subId.includes("_lp_") || taskId.startsWith("task_lp_");
         if (isAutoTask) {
-          return activeAutoTaskIds.includes(sub.taskId);
+          return activeAutoTaskIds.includes(taskId);
         }
         return true;
       });
@@ -485,6 +494,7 @@ export default function App() {
       ...prev,
       [studentId]: { uts, uas }
     }));
+    saveItemToApi("exam-grades", { studentId, uts, uas });
   };
 
   // Student Development
@@ -545,6 +555,13 @@ export default function App() {
       if (parsed.developmentLogs) setDevelopmentLogs(parsed.developmentLogs);
       if (parsed.disciplineLogs) setDisciplineLogs(parsed.disciplineLogs);
       if (parsed.examGrades) setExamGrades(parsed.examGrades);
+
+      // Sync data snapshot to backend
+      fetch("/api/sync-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: jsonData
+      }).catch(() => {});
     } catch (e) {
       console.error("Error parsing backup string during import process", e);
     }
@@ -567,6 +584,24 @@ export default function App() {
       defaultExams[std.id] = { uts: 80, uas: 82 };
     });
     setExamGrades(defaultExams);
+
+    // Sync default reset data to backend
+    fetch("/api/sync-all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        teacherProfile: DEFAULT_TEACHER_PROFILE,
+        students: INITIAL_STUDENTS,
+        lessonPlans: INITIAL_LESSON_PLANS,
+        attendance: INITIAL_ATTENDANCE,
+        materials: INITIAL_MATERIALS,
+        tasks: INITIAL_TASKS,
+        taskSubmissions: INITIAL_TASK_SUBMISSIONS,
+        developmentProgress: INITIAL_DEVELOPMENT_PROGRESS,
+        disciplineLogs: INITIAL_DISCIPLINE_LOGS,
+        examGrades: defaultExams
+      })
+    }).catch(() => {});
   };
 
   // Sidebar Menu configuration
