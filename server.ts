@@ -98,9 +98,16 @@ async function startServer() {
           name VARCHAR(255) NOT NULL,
           nisn VARCHAR(50) NOT NULL,
           className VARCHAR(100) NOT NULL,
-          gender ENUM('L', 'P') NOT NULL
+          gender ENUM('L', 'P') NOT NULL,
+          photoUrl LONGTEXT NULL,
+          password TEXT NULL,
+          hasChangedPassword TINYINT(1) DEFAULT 0
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
+
+      try { await pool.query("ALTER TABLE students ADD COLUMN photoUrl LONGTEXT NULL"); } catch (e) {}
+      try { await pool.query("ALTER TABLE students ADD COLUMN password TEXT NULL"); } catch (e) {}
+      try { await pool.query("ALTER TABLE students ADD COLUMN hasChangedPassword TINYINT(1) DEFAULT 0"); } catch (e) {}
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS lesson_plans (
@@ -269,8 +276,14 @@ async function startServer() {
     const pool = getDbPool();
     if (pool) {
       try {
-        const [rows]: any = await pool.query("SELECT id, name, nisn, className, gender FROM students");
-        if (rows && rows.length > 0) return res.json(rows);
+        const [rows]: any = await pool.query("SELECT id, name, nisn, className, gender, photoUrl, password, hasChangedPassword FROM students");
+        if (rows && rows.length > 0) {
+          const formatted = rows.map((r: any) => ({
+            ...r,
+            hasChangedPassword: Boolean(r.hasChangedPassword)
+          }));
+          return res.json(formatted);
+        }
       } catch (err) {
         // Fallback to JSON store
       }
@@ -287,10 +300,11 @@ async function startServer() {
         saveJsonStudent(student);
         if (pool) {
           try {
-            const { id, name, nisn, className, gender } = student;
-            await pool.query("REPLACE INTO students (id, name, nisn, className, gender) VALUES (?, ?, ?, ?, ?)", [
-              id, name, nisn, className, gender
-            ]);
+            const { id, name, nisn, className, gender, photoUrl, password, hasChangedPassword } = student;
+            await pool.query(
+              "REPLACE INTO students (id, name, nisn, className, gender, photoUrl, password, hasChangedPassword) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
+              [id, name, nisn, className, gender, photoUrl || null, password || null, hasChangedPassword ? 1 : 0]
+            );
           } catch (err) {
             // Saved in JSON store
           }
