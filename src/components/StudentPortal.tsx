@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
   User, 
   GraduationCap, 
@@ -20,13 +20,15 @@ import {
   ChevronUp,
   UserCheck, 
   TrendingUp,
-  Eye
+  Eye,
+  Camera
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Student, LessonPlan, Attendance, Material, Task, TaskSubmission, DisciplineLog } from "../types";
 import FilePreviewModal, { PreviewableFile } from "./FilePreviewModal";
 
 interface StudentPortalProps {
+  loggedStudent: Student;
   students: Student[];
   lessonPlans: LessonPlan[];
   attendance: Attendance[];
@@ -34,24 +36,24 @@ interface StudentPortalProps {
   submissions: TaskSubmission[];
   disciplineLogs: DisciplineLog[];
   onSaveSubmission: (submission: TaskSubmission) => void;
+  onUpdateStudentPhoto: (studentId: string, photoUrl: string) => void;
+  onLogout: () => void;
 }
 
 export default function StudentPortal({
+  loggedStudent,
   students,
   lessonPlans,
   attendance,
   tasks,
   submissions,
   disciplineLogs,
-  onSaveSubmission
+  onSaveSubmission,
+  onUpdateStudentPhoto,
+  onLogout
 }: StudentPortalProps) {
-  // Login states
-  const [loggedStudent, setLoggedStudent] = useState<Student | null>(() => {
-    const saved = localStorage.getItem("student_logged_user");
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [nisnInput, setNisnInput] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoSuccessMsg, setPhotoSuccessMsg] = useState("");
 
   // Subsections navigation inside Student Portal
   const [activeSubTab, setActiveSubTab] = useState<"materi" | "attitude">("materi");
@@ -63,100 +65,59 @@ export default function StudentPortal({
   const [expandedPlanIds, setExpandedPlanIds] = useState<{ [planId: string]: boolean }>({});
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
 
+  const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Harap pilih file gambar (.jpg, .png, .webp).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress/Resize image to max 400x400 for smooth base64 storage
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const maxSize = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          onUpdateStudentPhoto(loggedStudent.id, compressedDataUrl);
+          setPhotoSuccessMsg("Foto profil berhasil diperbarui!");
+          setTimeout(() => setPhotoSuccessMsg(""), 3000);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const togglePlanExpand = (planId: string) => {
     setExpandedPlanIds(prev => ({
       ...prev,
       [planId]: !prev[planId]
     }));
   };
-
-  const handleLogin = (nisnToUse?: string) => {
-    const targetNisn = nisnToUse || nisnInput.trim();
-    if (!targetNisn) {
-      setLoginError("Harap masukkan NISN.");
-      return;
-    }
-
-    const student = students.find(s => s.nisn === targetNisn);
-    if (student) {
-      setLoggedStudent(student);
-      localStorage.setItem("student_logged_user", JSON.stringify(student));
-      setLoginError("");
-      setNisnInput("");
-    } else {
-      setLoginError("NISN tidak terdaftar. Periksa kembali atau pilih Akun Demo di bawah.");
-    }
-  };
-
-  const handleLogout = () => {
-    setLoggedStudent(null);
-    localStorage.removeItem("student_logged_user");
-  };
-
-  // If no student is logged in, show the login view
-  if (!loggedStudent) {
-    // Quick Demo Accounts to facilitate grading and checking
-    const demoStudents = students.slice(0, 4);
-
-    return (
-      <div className="max-w-md mx-auto my-12 bg-white rounded-3xl border border-natural-border shadow-md overflow-hidden p-6 sm:p-8 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="bg-natural-accent w-14 h-14 rounded-2xl flex items-center justify-center text-natural-sage mx-auto shadow-sm">
-            <GraduationCap size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-natural-dark">Portal Siswa SMKN 6 Jember</h2>
-          <p className="text-xs text-slate-400">Silakan masuk menggunakan NISN Anda untuk melihat jurnal pembelajaran, tugas, dan nilai.</p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-slate-600 font-bold text-xs">Nomor Induk Siswa Nasional (NISN)</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="cth: 0074128910"
-                value={nisnInput}
-                onChange={(e) => setNisnInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
-                className="flex-1 bg-[#FBFBFA] border border-natural-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-natural-sage"
-              />
-              <button
-                onClick={() => handleLogin()}
-                className="bg-natural-mid hover:bg-natural-dark text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-colors"
-              >
-                Masuk
-              </button>
-            </div>
-            {loginError && (
-              <p className="text-[10px] text-rose-600 font-bold flex items-center gap-1">
-                <AlertCircle size={12} /> {loginError}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Demo Login */}
-        <div className="border-t border-natural-border pt-5 space-y-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider text-center">Akun Demo Pengujian Cepat</p>
-          <div className="grid grid-cols-1 gap-2">
-            {demoStudents.map(std => (
-              <button
-                key={std.id}
-                onClick={() => handleLogin(std.nisn)}
-                className="flex items-center justify-between bg-[#FBFBFA] hover:bg-natural-accent/40 border border-natural-border p-2.5 rounded-xl text-left transition-all text-xs text-natural-dark cursor-pointer group"
-              >
-                <div>
-                  <p className="font-bold">{std.name}</p>
-                  <p className="text-[10px] text-slate-400">Kelas: {std.className} | NISN: <span className="font-mono">{std.nisn}</span></p>
-                </div>
-                <ChevronRight size={14} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Logged in Student statistics computation
   const studentPlans = lessonPlans.filter(p => p.className === loggedStudent.className);
@@ -268,23 +229,73 @@ export default function StudentPortal({
 
   return (
     <div className="space-y-6">
+      {/* Photo Success Notification */}
+      {photoSuccessMsg && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl flex items-center gap-2.5 text-xs font-bold"
+        >
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <span>{photoSuccessMsg}</span>
+        </motion.div>
+      )}
+
+      {/* Hidden File Input for Student Profile Photo */}
+      <input
+        type="file"
+        ref={photoInputRef}
+        onChange={handlePhotoFileChange}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Student Welcome Header Card */}
       <div className="bg-white rounded-2xl border border-natural-border p-4.5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-3xs">
-        <div className="flex items-center gap-3">
-          <div className="bg-natural-sage text-white w-12 h-12 rounded-xl flex items-center justify-center font-bold">
-            {loggedStudent.name.charAt(0)}
+        <div className="flex items-center gap-4">
+          {/* Student Profile Photo with Camera overlay */}
+          <div className="relative group shrink-0">
+            {loggedStudent.photoUrl ? (
+              <img
+                src={loggedStudent.photoUrl}
+                alt={loggedStudent.name}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-natural-border shadow-xs"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-natural-sage text-white font-bold text-xl flex items-center justify-center border-2 border-natural-border shadow-xs">
+                {loggedStudent.name.charAt(0)}
+              </div>
+            )}
+            
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 bg-natural-dark hover:bg-natural-mid text-white p-1.5 rounded-xl border-2 border-white shadow-xs cursor-pointer transition-transform hover:scale-105"
+              title="Unggah / Edit Foto Profil"
+            >
+              <Camera size={13} />
+            </button>
           </div>
+
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-bold text-natural-dark leading-tight">{loggedStudent.name}</h2>
               <span className="bg-[#E8EDDF] text-natural-dark text-[10px] font-bold px-2 py-0.5 rounded-md font-mono">{loggedStudent.className}</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">NISN: <span className="font-mono">{loggedStudent.nisn}</span> • Peran: Siswa Terautentikasi</p>
+            <p className="text-xs text-slate-400 mt-1">
+              NISN: <span className="font-mono">{loggedStudent.nisn}</span> • Jenis Kelamin: {loggedStudent.gender === "L" ? "Laki-laki" : "Perempuan"}
+            </p>
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              className="mt-1.5 text-[11px] font-bold text-natural-sage hover:text-natural-dark flex items-center gap-1 cursor-pointer"
+            >
+              <Upload size={12} />
+              <span>Ganti Foto Profil</span>
+            </button>
           </div>
         </div>
 
         <button
-          onClick={handleLogout}
+          onClick={onLogout}
           className="flex items-center justify-center gap-1.5 border border-natural-border hover:border-rose-200 bg-[#FBFBFA] text-slate-500 hover:text-rose-600 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-3xs"
         >
           <LogOut size={14} />

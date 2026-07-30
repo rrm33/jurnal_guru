@@ -397,7 +397,16 @@ export default function GradeRecap({
                     <tr key={item.id} className="hover:bg-[#FBFBFA]/30 transition-colors text-xs print:hover:bg-transparent">
                       <td className="py-3.5 px-4 font-mono text-slate-400">{index + 1}</td>
                       <td className="py-3.5 px-4">
-                        <span className="font-semibold text-natural-dark block">{item.name}</span>
+                        <div className="flex items-center gap-2.5">
+                          {item.student.photoUrl ? (
+                            <img src={item.student.photoUrl} alt={item.name} className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
+                              {item.name.charAt(0)}
+                            </div>
+                          )}
+                          <span className="font-semibold text-natural-dark block">{item.name}</span>
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-slate-500">{item.nisn}</td>
                       

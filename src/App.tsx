@@ -418,6 +418,10 @@ export default function App() {
     saveItemToApi("students", updatedStudent);
   };
 
+  const handleUpdateStudentPhoto = (studentId: string, photoUrl: string) => {
+    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, photoUrl } : s));
+  };
+
   const handleDeleteStudent = (id: string) => {
     setStudents(prev => prev.filter(s => s.id !== id));
     // Cascade delete logs and assignments for this student
@@ -749,6 +753,7 @@ export default function App() {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full transition-all print:p-0 print:max-w-none print:shadow-none print:bg-white overflow-hidden">
           {userRole === "siswa" ? (
             <StudentPortal
+              loggedStudent={students[0]}
               students={students}
               lessonPlans={lessonPlans}
               attendance={attendance}
@@ -756,6 +761,8 @@ export default function App() {
               submissions={submissions}
               disciplineLogs={disciplineLogs}
               onSaveSubmission={handleSaveSubmission}
+              onUpdateStudentPhoto={handleUpdateStudentPhoto}
+              onLogout={() => setUserRole("guru")}
             />
           ) : (
             <AnimatePresence mode="wait">

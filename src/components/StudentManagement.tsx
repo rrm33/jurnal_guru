@@ -59,6 +59,7 @@ export default function StudentManagement({
   const [nisn, setNisn] = useState("");
   const [className, setClassName] = useState(classes[0] || "XI RPL 1");
   const [gender, setGender] = useState<"L" | "P">("L");
+  const [photoUrl, setPhotoUrl] = useState<string>("");
   const [formError, setFormError] = useState("");
 
   // Excel / CSV Upload state
@@ -70,6 +71,7 @@ export default function StudentManagement({
   } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Filtered and searched students
   const filteredStudents = useMemo(() => {
@@ -87,6 +89,7 @@ export default function StudentManagement({
     setNisn("");
     setClassName(classes[0] || "XI RPL 1");
     setGender("L");
+    setPhotoUrl("");
     setFormError("");
     setIsFormOpen(true);
   };
@@ -97,8 +100,52 @@ export default function StudentManagement({
     setNisn(student.nisn);
     setClassName(student.className);
     setGender(student.gender);
+    setPhotoUrl(student.photoUrl || "");
     setFormError("");
     setIsFormOpen(true);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setFormError("File foto harus berupa gambar (.jpg, .png, .webp).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const maxSize = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setPhotoUrl(canvas.toDataURL("image/jpeg", 0.85));
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -130,7 +177,8 @@ export default function StudentManagement({
       name: name.trim(),
       nisn: nisn.trim(),
       className,
-      gender
+      gender,
+      photoUrl: photoUrl || editingStudent?.photoUrl
     };
 
     if (editingStudent) {
@@ -453,7 +501,20 @@ export default function StudentManagement({
                   <tr key={student.id} className="hover:bg-[#FBFBFA]/40 transition-colors">
                     <td className="py-3 px-4.5 text-slate-400 font-mono">{idx + 1}</td>
                     <td className="py-3 px-4.5">
-                      <span className="font-semibold text-natural-dark text-xs">{student.name}</span>
+                      <div className="flex items-center gap-2.5">
+                        {student.photoUrl ? (
+                          <img
+                            src={student.photoUrl}
+                            alt={student.name}
+                            className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
+                            {student.name.charAt(0)}
+                          </div>
+                        )}
+                        <span className="font-semibold text-natural-dark text-xs">{student.name}</span>
+                      </div>
                     </td>
                     <td className="py-3 px-4.5 font-mono text-slate-500">{student.nisn}</td>
                     <td className="py-3 px-4.5">
@@ -711,6 +772,38 @@ export default function StudentManagement({
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               
+              {/* Photo Upload Input */}
+              <div className="space-y-1">
+                <label className="text-slate-600 font-bold text-xs block">Foto Profil Siswa</label>
+                <div className="flex items-center gap-3 bg-natural-bg p-2.5 rounded-xl border border-natural-border">
+                  {photoUrl ? (
+                    <img src={photoUrl} alt="Preview" className="w-12 h-12 rounded-xl object-cover border border-natural-border shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-natural-sage/20 text-natural-sage font-bold flex items-center justify-center shrink-0 text-sm">
+                      {name ? name.charAt(0) : "S"}
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <input
+                      type="file"
+                      ref={photoInputRef}
+                      onChange={handlePhotoUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="bg-white border border-natural-border hover:bg-natural-accent/30 text-natural-dark text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Upload size={13} />
+                      <span>{photoUrl ? "Ganti Foto" : "Unggah Foto"}</span>
+                    </button>
+                    <p className="text-[9px] text-slate-400 font-mono">Format: JPG, PNG, WEBP</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Name */}
               <div className="space-y-1">
                 <label className="text-slate-600 font-bold text-xs block">Nama Lengkap Siswa</label>

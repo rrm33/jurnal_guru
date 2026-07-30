@@ -11,6 +11,19 @@ export interface Student {
   nisn: string;
   className: string;
   gender: "L" | "P";
+  photoUrl?: string;
+  password?: string;
+}
+
+export interface UserAccount {
+  id: string;
+  username: string; // NIP for Guru, NISN for Siswa, or custom login handle
+  name: string;
+  role: "guru" | "siswa";
+  password?: string;
+  studentId?: string; // links to Student.id if role is "siswa"
+  nip?: string;
+  className?: string;
 }
 
 export interface LessonPlan {

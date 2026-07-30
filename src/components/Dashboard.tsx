@@ -261,7 +261,7 @@ export default function Dashboard({
                       dataKey="value"
                     >
                       {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`cell-pie-${entry.name}-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => `${value}%`} />
@@ -308,7 +308,7 @@ export default function Dashboard({
                   <Tooltip formatter={(value) => [`${value} Poin`, "Rata-rata"]} />
                   <Bar dataKey="Rata-rata Nilai" radius={[6, 6, 0, 0]}>
                     {classGradesData.map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={idx % 2 === 0 ? "#8DA47E" : "#2C3E2D"} />
+                      <Cell key={`cell-grade-${entry.name}-${idx}`} fill={idx % 2 === 0 ? "#8DA47E" : "#2C3E2D"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -331,7 +331,7 @@ export default function Dashboard({
                   <Tooltip />
                   <Bar dataKey="Jumlah" radius={[6, 6, 0, 0]}>
                     {submissionChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                      <Cell key={`cell-sub-${entry.name}-${index}`} fill={entry.fill} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -358,7 +358,7 @@ export default function Dashboard({
                     <Tooltip />
                     <Bar dataKey="Poin" radius={[0, 6, 6, 0]}>
                       {disciplineChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`cell-disc-${entry.name}-${index}`} fill={entry.color} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -383,14 +383,14 @@ export default function Dashboard({
           </div>
           <div className="space-y-3">
             {recentLogs.length > 0 ? (
-              recentLogs.map((log) => {
+              recentLogs.map((log, index) => {
                 const stdName = studentMap[log.studentId]?.name || "Siswa Tidak Dikenal";
                 const stdClass = studentMap[log.studentId]?.className || "";
                 const isPositif = log.type === "Positif";
 
                 return (
                   <div 
-                    key={log.id} 
+                    key={log.id ? `recent-log-${log.id}-${index}` : `recent-log-${index}`} 
                     className={`p-3 rounded-xl border flex items-start gap-3 transition-colors ${
                       isPositif ? "bg-natural-accent/30 border-natural-border/80" : "bg-rose-50/45 border-rose-100"
                     }`}

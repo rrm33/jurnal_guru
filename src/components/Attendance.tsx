@@ -349,8 +349,19 @@ export default function AttendanceTracker({
                     <tr key={student.id} className="hover:bg-[#FBFBFA]/50 transition-colors">
                       <td className="py-3.5 px-4.5 font-mono text-xs text-slate-400">{idx + 1}</td>
                       <td className="py-3.5 px-4.5">
-                        <span className="font-semibold text-xs text-natural-dark block">{student.name}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">ID: {student.id}</span>
+                        <div className="flex items-center gap-2.5">
+                          {student.photoUrl ? (
+                            <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover border border-natural-border shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center shrink-0">
+                              {student.name.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-semibold text-xs text-natural-dark block">{student.name}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">ID: {student.id}</span>
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3.5 px-4.5 font-mono text-[11px] text-slate-500 space-y-0.5">
                         <div>{student.nisn}</div>
