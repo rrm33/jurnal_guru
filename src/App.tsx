@@ -165,34 +165,36 @@ export default function App() {
     async function loadFromBackend() {
       try {
         const profile = await fetchFromApiOrLocal("teacher-profile", "teacher_profile", DEFAULT_TEACHER_PROFILE);
-        if (profile) setTeacherProfile(profile);
+        if (profile) setTeacherProfile(prev => JSON.stringify(prev) === JSON.stringify(profile) ? prev : profile);
 
         const stds = await fetchFromApiOrLocal("students", "students", INITIAL_STUDENTS);
-        if (stds && stds.length > 0) setStudents(stds);
+        if (stds && stds.length > 0) setStudents(prev => JSON.stringify(prev) === JSON.stringify(stds) ? prev : stds);
 
         const lps = await fetchFromApiOrLocal("lesson-plans", "lesson_plans", INITIAL_LESSON_PLANS);
-        if (lps && lps.length > 0) setLessonPlans(lps);
+        if (lps && lps.length > 0) setLessonPlans(prev => JSON.stringify(prev) === JSON.stringify(lps) ? prev : lps);
 
         const att = await fetchFromApiOrLocal("attendance", "attendance", INITIAL_ATTENDANCE);
-        if (att && att.length > 0) setAttendance(att);
+        if (att && att.length > 0) setAttendance(prev => JSON.stringify(prev) === JSON.stringify(att) ? prev : att);
 
         const mats = await fetchFromApiOrLocal("materials", "materials", INITIAL_MATERIALS);
-        if (mats && mats.length > 0) setMaterials(mats);
+        if (mats && mats.length > 0) setMaterials(prev => JSON.stringify(prev) === JSON.stringify(mats) ? prev : mats);
 
-        const tsks = await fetchFromApiOrLocal("tasks", "tasks", INITIAL_TASKS);
-        if (tsks && tsks.length > 0) setTasks(tsks);
+        // Tasks are completely auto-generated from LessonPlans. We do NOT fetch them from the backend
+        // to prevent overwriting the generated tasks every 10 seconds.
+        // const tsks = await fetchFromApiOrLocal("tasks", "tasks", INITIAL_TASKS);
+        // if (tsks && tsks.length > 0) setTasks(prev => JSON.stringify(prev) === JSON.stringify(tsks) ? prev : tsks);
 
         const subs = await fetchFromApiOrLocal("task-submissions", "task_submissions", INITIAL_TASK_SUBMISSIONS);
-        if (subs && subs.length > 0) setSubmissions(subs);
+        if (subs && subs.length > 0) setSubmissions(prev => JSON.stringify(prev) === JSON.stringify(subs) ? prev : subs);
 
         const devLogs = await fetchFromApiOrLocal("development-progress", "development_logs", INITIAL_DEVELOPMENT_PROGRESS);
-        if (devLogs && devLogs.length > 0) setDevelopmentLogs(devLogs);
+        if (devLogs && devLogs.length > 0) setDevelopmentLogs(prev => JSON.stringify(prev) === JSON.stringify(devLogs) ? prev : devLogs);
 
         const discLogs = await fetchFromApiOrLocal("discipline-logs", "discipline_logs", INITIAL_DISCIPLINE_LOGS);
-        if (discLogs && discLogs.length > 0) setDisciplineLogs(discLogs);
+        if (discLogs && discLogs.length > 0) setDisciplineLogs(prev => JSON.stringify(prev) === JSON.stringify(discLogs) ? prev : discLogs);
 
         const exGrades = await fetchFromApiOrLocal("exam-grades", "exam_grades", {});
-        if (exGrades && Object.keys(exGrades).length > 0) setExamGrades(exGrades);
+        if (exGrades && Object.keys(exGrades).length > 0) setExamGrades(prev => JSON.stringify(prev) === JSON.stringify(exGrades) ? prev : exGrades);
       } catch (err) {
         console.log("Using LocalStorage fallback mode");
       }
