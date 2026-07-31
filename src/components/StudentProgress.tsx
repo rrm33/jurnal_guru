@@ -240,7 +240,7 @@ export default function StudentProgress({
                 <span className="text-2xl font-black text-natural-dark">{classTasks.length}</span>
               </div>
               <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl shadow-3xs flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] text-emerald-600 uppercase font-bold">Mengerjakan (Selesai/Menunggu)</span>
+                <span className="text-[10px] text-emerald-600 uppercase font-bold">Sudah Mengumpulkan</span>
                 <span className="text-2xl font-black text-emerald-700">
                   {classStudents.filter(s => taskSubmissionsMap[s.id]?.status === "Selesai" || taskSubmissionsMap[s.id]?.status === "Menunggu Penilaian").length}
                 </span>
