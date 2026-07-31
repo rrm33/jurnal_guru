@@ -1,8 +1,10 @@
 import mysql from 'mysql2/promise';
 
 let pool: mysql.Pool | null = null;
+let isMySqlUnreachable = false;
 
 export function getDbPool(): mysql.Pool | null {
+  if (isMySqlUnreachable) return null;
   if (pool) return pool;
 
   const rawHost = process.env.DB_HOST;
@@ -28,10 +30,26 @@ export function getDbPool(): mysql.Pool | null {
       queueLimit: 0,
       connectTimeout: 5000,
     });
+    // Intercept query to cache offline state
+    const originalQuery = pool.query.bind(pool);
+    pool.query = async function(...args: any[]) {
+       if (isMySqlUnreachable) throw new Error("MySQL is offline");
+       try {
+           return await originalQuery(...args);
+       } catch (err: any) {
+           if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.code === 'ENOTFOUND' || err.fatal) {
+               isMySqlUnreachable = true;
+               console.warn("[MySQL] Terputus/Timeout. Beralih ke JSON secara permanen untuk menghemat waktu loading.");
+           }
+           throw err;
+       }
+    } as any;
+
     console.log(`[MySQL] Connection pool created for database: ${dbName} at ${host}`);
     return pool;
   } catch (err) {
     console.error("[MySQL] Failed to create connection pool:", err);
+    isMySqlUnreachable = true;
     return null;
   }
 }
@@ -71,6 +89,9 @@ export async function testDbConnectionDetailed(): Promise<{ connected: boolean; 
       detailedError = `[ER_BAD_DB_ERROR] Database '${database}' tidak ditemukan. Pastikan nama database di cPanel sudah sesuai (termasuk prefix username cPanel, contoh: 'username_jurnal'). Detail: ${err.message}`;
     } else if (err.code === 'ENOTFOUND') {
       detailedError = `[ENOTFOUND] Host '${host}' tidak dapat ditemukan. Coba ganti DB_HOST menjadi '127.0.0.1' atau 'localhost'. Detail: ${err.message}`;
+    }
+    if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.code === 'ENOTFOUND') {
+      isMySqlUnreachable = true;
     }
     return { connected: false, error: detailedError, host, database, user };
   }
