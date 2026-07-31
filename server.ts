@@ -666,6 +666,15 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // --- USER ACCOUNTS (Dummy endpoint to prevent 404 on frontend sync) ---
+  app.get("/api/user-accounts", (req, res) => {
+    res.json([]);
+  });
+
+  app.post("/api/user-accounts", (req, res) => {
+    res.json({ success: true });
+  });
+
   // --- SYNC ALL DATA ENDPOINT ---
   app.post("/api/sync-all", (req, res) => {
     try {

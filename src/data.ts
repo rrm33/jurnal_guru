@@ -422,8 +422,13 @@ export const loadData = <T>(key: string, defaultValue: T): T => {
 
 export const saveData = <T>(key: string, data: T): void => {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    let dataToSave = data;
+    if (key === "students" && Array.isArray(data)) {
+      // Strip large photoUrl base64 strings to prevent QuotaExceededError in localStorage
+      dataToSave = data.map((s: any) => ({ ...s, photoUrl: undefined })) as unknown as T;
+    }
+    localStorage.setItem(key, JSON.stringify(dataToSave));
   } catch (e) {
-    console.error("Error saving data to localStorage for key: " + key, e);
+    console.warn("Warning: Could not save data to localStorage for key: " + key + " (Quota might be exceeded)");
   }
 };
