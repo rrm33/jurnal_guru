@@ -234,15 +234,21 @@ export default function StudentProgress({
           
           {/* Stats Bar */}
           {activeTaskObj && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white p-4 rounded-xl border border-natural-border shadow-3xs flex flex-col items-center justify-center text-center">
                 <span className="text-[10px] text-slate-400 uppercase font-bold">Total Tugas Kelas</span>
                 <span className="text-2xl font-black text-natural-dark">{classTasks.length}</span>
               </div>
               <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl shadow-3xs flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] text-emerald-600 uppercase font-bold">Sudah Mengumpulkan</span>
+                <span className="text-[10px] text-emerald-600 uppercase font-bold">Sudah Dinilai</span>
                 <span className="text-2xl font-black text-emerald-700">
-                  {classStudents.filter(s => taskSubmissionsMap[s.id]?.status === "Selesai" || taskSubmissionsMap[s.id]?.status === "Menunggu Penilaian").length}
+                  {classStudents.filter(s => taskSubmissionsMap[s.id]?.status === "Selesai").length}
+                </span>
+              </div>
+              <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl shadow-3xs flex flex-col items-center justify-center text-center animate-pulse">
+                <span className="text-[10px] text-amber-600 uppercase font-bold">Menunggu Penilaian</span>
+                <span className="text-2xl font-black text-amber-700">
+                  {classStudents.filter(s => taskSubmissionsMap[s.id]?.status === "Menunggu Penilaian").length}
                 </span>
               </div>
               <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl shadow-3xs flex flex-col items-center justify-center text-center">
