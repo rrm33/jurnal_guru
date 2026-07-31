@@ -98,6 +98,9 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+  // Serve dynamic uploads (photos)
+  app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+
   // --- API ROUTES ---
 
   // Health check & DB connection status with fallback to Server JSON Store
