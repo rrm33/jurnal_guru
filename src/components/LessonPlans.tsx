@@ -492,7 +492,7 @@ export default function LessonPlans({
                     <input 
                       type="file" 
                       id="rpp-file-upload"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.webp,image/*"
                       onChange={handleFileChange}
                       className="hidden"
                     />
@@ -515,7 +515,7 @@ export default function LessonPlans({
                     ) : (
                       <div>
                         <p className="text-xs font-bold text-slate-600">Seret file di sini, atau <span className="text-natural-mid underline">klik untuk memilih</span></p>
-                        <p className="text-[10px] text-slate-400 mt-1">Mendukung PDF, Word, PPT (Maks 10MB)</p>
+                        <p className="text-[10px] text-slate-400 mt-1">Mendukung Gambar, PDF, Word, PPT (Maks 10MB)</p>
                       </div>
                     )}
                   </div>
