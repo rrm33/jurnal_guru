@@ -269,6 +269,7 @@ export default function App() {
         generatedMaterials.push({
           id: `mat_${plan.id}`,
           className: plan.className,
+          subject: plan.subject,
           lessonPlanId: plan.id,
           title: `Materi Wk ${plan.week}: ${plan.topic}`,
           content: plan.materialText || "",
@@ -284,6 +285,7 @@ export default function App() {
         generatedTasks.push({
           id: taskId,
           className: plan.className,
+          subject: plan.subject,
           title: plan.taskTitle,
           description: plan.taskDescription || "",
           maxPoints: plan.taskMaxPoints || 100,
