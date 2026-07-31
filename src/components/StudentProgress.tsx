@@ -120,7 +120,7 @@ export default function StudentProgress({
 
   const openReviewModal = (stdId: string, currentSub?: TaskSubmission) => {
     setReviewingStudentId(stdId);
-    setReviewGrade(currentSub?.grade ?? (activeTaskObj?.maxPoints || 100));
+    setReviewGrade(currentSub?.grade ?? 0);
     setReviewFeedback(currentSub?.feedback ?? "");
     setReviewStatus(currentSub?.status ?? "Selesai");
   };
