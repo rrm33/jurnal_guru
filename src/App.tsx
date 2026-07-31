@@ -155,6 +155,33 @@ export default function App() {
   useEffect(() => { saveData("user_accounts", users); }, [users]);
   useEffect(() => { saveData("app_auth_session", authSession); }, [authSession]);
 
+  // --- LEGACY DATA MIGRATION ---
+  // If the user has old localStorage data with the legacy subject name, migrate it to the new name.
+  useEffect(() => {
+    setLessonPlans(prev => {
+      let migrated = false;
+      const next = prev.map(p => {
+        if (p.subject === "Pemrograman Web & Perangkat Bergerak") {
+          migrated = true;
+          return { ...p, subject: "Pemrograman Mobile" };
+        }
+        return p;
+      });
+      return migrated ? next : prev;
+    });
+    setAttendance(prev => {
+      let migrated = false;
+      const next = prev.map(a => {
+        if (a.subject === "Pemrograman Web & Perangkat Bergerak") {
+          migrated = true;
+          return { ...a, subject: "Pemrograman Mobile" };
+        }
+        return a;
+      });
+      return migrated ? next : prev;
+    });
+  }, []);
+
   // --- AUTH & USER HANDLERS ---
   const handleLoginSuccess = (role: "guru" | "siswa", studentData?: Student) => {
     const session = { isAuthenticated: true, role, studentData };
