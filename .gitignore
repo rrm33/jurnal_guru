@@ -6,7 +6,6 @@ coverage/
 .env*
 !.env.example
 
-dist/
 data/
 storage/
 vendor/

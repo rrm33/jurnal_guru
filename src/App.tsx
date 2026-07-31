@@ -144,8 +144,10 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    setAuthSession(null);
-    localStorage.removeItem("app_auth_session");
+    if (window.confirm("Apakah Anda yakin ingin keluar dari aplikasi?")) {
+      setAuthSession(null);
+      localStorage.removeItem("app_auth_session");
+    }
   };
 
   const handleAddUser = (user: UserAccount) => {
