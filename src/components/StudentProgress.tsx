@@ -205,24 +205,55 @@ export default function StudentProgress({
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-bold uppercase">Kelas Aktif:</span>
-          <select
-            value={selectedClass}
-            onChange={(e) => {
-              setSelectedClass(e.target.value);
-              setEditingStudentId(null);
-            }}
-            className="bg-natural-accent border border-natural-border text-natural-dark text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-natural-sage cursor-pointer"
-          >
-            {classes.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+        <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+          <span className="text-xs text-slate-400 font-bold uppercase shrink-0">Kelas:</span>
+          <div className="flex gap-2 overflow-x-auto pb-1 max-w-[250px] md:max-w-md no-scrollbar">
+            {classes.map(c => (
+              <button
+                key={c}
+                onClick={() => {
+                  setSelectedClass(c);
+                  setEditingStudentId(null);
+                }}
+                className={`shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                  selectedClass === c 
+                    ? "bg-[#2C3E2D] text-white"
+                    : "bg-natural-accent hover:bg-natural-light text-natural-dark border border-natural-border"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* --- CONTENT FOR TAB 1: TASK GRADING --- */}
       {activeTab === "tasks" && (
         <div className="space-y-6">
+          
+          {/* Stats Bar */}
+          {activeTaskObj && (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-xl border border-natural-border shadow-3xs flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] text-slate-400 uppercase font-bold">Total Tugas Kelas</span>
+                <span className="text-2xl font-black text-natural-dark">{classTasks.length}</span>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl shadow-3xs flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] text-emerald-600 uppercase font-bold">Mengerjakan (Selesai/Menunggu)</span>
+                <span className="text-2xl font-black text-emerald-700">
+                  {classStudents.filter(s => taskSubmissionsMap[s.id]?.status === "Selesai" || taskSubmissionsMap[s.id]?.status === "Menunggu Penilaian").length}
+                </span>
+              </div>
+              <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl shadow-3xs flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] text-rose-600 uppercase font-bold">Belum Mengerjakan</span>
+                <span className="text-2xl font-black text-rose-700">
+                  {classStudents.filter(s => !taskSubmissionsMap[s.id] || taskSubmissionsMap[s.id]?.status === "Belum Mengumpulkan").length}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Task picker */}
           <div className="bg-[#FBFBFA] border border-natural-border rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1">
