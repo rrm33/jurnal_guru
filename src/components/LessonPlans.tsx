@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { Plus, Edit3, Check, Calendar, Trash2, BookOpen, AlertCircle, Paperclip, File, Download, Award, Clock, FileText, UserCheck, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { LessonPlan } from "../types";
 
@@ -151,7 +152,7 @@ export default function LessonPlans({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic || !competency) {
-      alert("Harap isi Judul Topik dan Alur Tujuan Pembelajaran (ATP).");
+      swalAlert("Harap isi Judul Topik dan Alur Tujuan Pembelajaran (ATP).");
       return;
     }
 
@@ -178,7 +179,7 @@ export default function LessonPlans({
       setEditingPlan(null);
     } else {
       if (selectedClassesForNew.length === 0) {
-        alert("Harap pilih minimal 1 kelas untuk RPP.");
+        swalAlert("Harap pilih minimal 1 kelas untuk RPP.");
         return;
       }
 
@@ -233,7 +234,7 @@ export default function LessonPlans({
         <div className="flex items-center gap-2">
           {filteredPlans.length > 0 && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (expandedPlanIds.length === filteredPlans.length) {
                   setExpandedPlanIds([]);
                 } else {
@@ -286,7 +287,7 @@ export default function LessonPlans({
               {editingPlan ? "Ubah Rencana Pembelajaran" : "Tambah Rencana Pembelajaran Baru"}
             </h4>
             <button 
-              onClick={() => { setIsAdding(false); setEditingPlan(null); }}
+              onClick={async () => { setIsAdding(false); setEditingPlan(null); }}
               className="text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
             >
               Batal
@@ -352,7 +353,7 @@ export default function LessonPlans({
                   </label>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       if (selectedClassesForNew.length === classes.length) {
                         setSelectedClassesForNew([]);
                       } else {
@@ -372,7 +373,7 @@ export default function LessonPlans({
                       <button
                         key={c}
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           if (isSelected) {
                             setSelectedClassesForNew(prev => prev.filter(item => item !== c));
                           } else {
@@ -517,7 +518,7 @@ export default function LessonPlans({
                         <p className="text-[10px] text-slate-400 font-mono">{materialFile.size}</p>
                         <button
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
                             setMaterialFile(null);
                           }}
@@ -592,7 +593,7 @@ export default function LessonPlans({
             <div className="md:col-span-2 flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => { setIsAdding(false); setEditingPlan(null); }}
+                onClick={async () => { setIsAdding(false); setEditingPlan(null); }}
                 className="bg-natural-accent hover:bg-natural-light text-natural-dark text-xs font-bold rounded-xl px-4 py-2 cursor-pointer"
               >
                 Batal
@@ -704,8 +705,8 @@ export default function LessonPlans({
                     </button>
 
                     <button
-                      onClick={() => {
-                        if (confirm("Hapus RPP minggu ini?")) {
+                      onClick={async () => {
+                        if (await swalConfirm("Hapus RPP minggu ini?")) {
                           onDeletePlan(plan.id);
                         }
                       }}

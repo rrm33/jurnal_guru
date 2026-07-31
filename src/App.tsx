@@ -183,10 +183,19 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    if (window.confirm("Apakah Anda yakin ingin keluar dari aplikasi?")) {
-      setAuthSession(null);
-      localStorage.removeItem("app_auth_session");
-    }
+    Swal.fire({
+      title: "Konfirmasi",
+      text: "Apakah Anda yakin ingin keluar dari aplikasi?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Keluar",
+      cancelButtonText: "Batal"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setAuthSession(null);
+        localStorage.removeItem("app_auth_session");
+      }
+    });
   };
 
   const handleAddUser = (user: UserAccount) => {

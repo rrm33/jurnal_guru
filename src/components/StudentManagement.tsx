@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
+import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { 
   Users, 
   Plus, 
@@ -198,10 +199,10 @@ export default function StudentManagement({
 
     if (editingStudent) {
       onUpdateStudent(payload);
-      alert("Berhasil memperbarui data siswa.");
+      swalAlert("Berhasil memperbarui data siswa.");
     } else {
       onAddStudent(payload);
-      alert("Berhasil menambahkan siswa baru.");
+      swalAlert("Berhasil menambahkan siswa baru.");
     }
 
     setIsFormOpen(false);
@@ -294,7 +295,7 @@ export default function StudentManagement({
           message: `Berhasil mengimpor ${importedStudents.length} siswa secara bulk!`,
           parsedCount: importedStudents.length
         });
-        alert(`Berhasil mengimpor ${importedStudents.length} siswa!`);
+        swalAlert(`Berhasil mengimpor ${importedStudents.length} siswa!`);
       } catch (err: any) {
         setImportResults({
           success: false,
@@ -570,8 +571,8 @@ export default function StudentManagement({
                           <Edit3 size={14} />
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(`Apakah Anda yakin ingin menghapus siswa ${student.name}? Semua data presensi dan tugas terkait akan terpengaruh.`)) {
+                          onClick={async () => {
+                            if (await swalConfirm(`Apakah Anda yakin ingin menghapus siswa ${student.name}? Semua data presensi dan tugas terkait akan terpengaruh.`)) {
                               onDeleteStudent(student.id);
                             }
                           }}
@@ -640,17 +641,17 @@ export default function StudentManagement({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         if (!editingClassNew.trim()) {
-                          alert("Nama kelas baru tidak boleh kosong.");
+                          swalAlert("Nama kelas baru tidak boleh kosong.");
                           return;
                         }
                         if (classes.includes(editingClassNew.trim()) && editingClassNew.trim() !== editingClassOld) {
-                          alert("Kelas tersebut sudah terdaftar.");
+                          swalAlert("Kelas tersebut sudah terdaftar.");
                           return;
                         }
                         onUpdateClass(editingClassOld, editingClassNew.trim());
-                        alert(`Berhasil memperbarui kelas dari '${editingClassOld}' menjadi '${editingClassNew.trim()}'. Relasi data siswa telah ter-update.`);
+                        swalAlert(`Berhasil memperbarui kelas dari '${editingClassOld}' menjadi '${editingClassNew.trim()}'. Relasi data siswa telah ter-update.`);
                         setEditingClassOld(null);
                         setEditingClassNew("");
                       }}
@@ -660,7 +661,7 @@ export default function StudentManagement({
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setEditingClassOld(null);
                         setEditingClassNew("");
                       }}
@@ -685,18 +686,18 @@ export default function StudentManagement({
                   
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       const clean = newClassNameInput.trim();
                       if (!clean) {
-                        alert("Nama kelas tidak boleh kosong.");
+                        swalAlert("Nama kelas tidak boleh kosong.");
                         return;
                       }
                       if (classes.includes(clean)) {
-                        alert("Kelas tersebut sudah terdaftar.");
+                        swalAlert("Kelas tersebut sudah terdaftar.");
                         return;
                       }
                       onAddClass(clean);
-                      alert(`Berhasil menambahkan kelas '${clean}' ke dalam sistem.`);
+                      swalAlert(`Berhasil menambahkan kelas '${clean}' ke dalam sistem.`);
                       setNewClassNameInput("");
                     }}
                     className="bg-natural-mid hover:bg-natural-dark text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition-colors w-full"
@@ -741,7 +742,7 @@ export default function StudentManagement({
                             <div className="inline-flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   setEditingClassOld(cls);
                                   setEditingClassNew(cls);
                                 }}
@@ -752,18 +753,18 @@ export default function StudentManagement({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   if (count > 0) {
-                                    if (!confirm(`Peringatan! Ada ${count} siswa yang terdaftar di kelas ${cls}. Menghapus kelas ini akan mengubah status kelas mereka menjadi 'Belum Ditentukan'. Anda yakin ingin menghapusnya?`)) {
+                                    if (!await swalConfirm(`Peringatan! Ada ${count} siswa yang terdaftar di kelas ${cls}. Menghapus kelas ini akan mengubah status kelas mereka menjadi 'Belum Ditentukan'. Anda yakin ingin menghapusnya?`)) {
                                       return;
                                     }
                                   } else {
-                                    if (!confirm(`Hapus kelas ${cls}?`)) {
+                                    if (!await swalConfirm(`Hapus kelas ${cls}?`)) {
                                       return;
                                     }
                                   }
                                   onDeleteClass(cls);
-                                  alert(`Kelas ${cls} telah berhasil dihapus.`);
+                                  swalAlert(`Kelas ${cls} telah berhasil dihapus.`);
                                 }}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                                 title="Hapus Kelas"
@@ -820,17 +821,17 @@ export default function StudentManagement({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         if (!editingSubjectNew.trim()) {
-                          alert("Nama mapel baru tidak boleh kosong.");
+                          swalAlert("Nama mapel baru tidak boleh kosong.");
                           return;
                         }
                         if (subjects.includes(editingSubjectNew.trim()) && editingSubjectNew.trim() !== editingSubjectOld) {
-                          alert("Mata Pelajaran tersebut sudah terdaftar.");
+                          swalAlert("Mata Pelajaran tersebut sudah terdaftar.");
                           return;
                         }
                         onUpdateSubject(editingSubjectOld, editingSubjectNew.trim());
-                        alert(`Berhasil memperbarui mapel dari '${editingSubjectOld}' menjadi '${editingSubjectNew.trim()}'.`);
+                        swalAlert(`Berhasil memperbarui mapel dari '${editingSubjectOld}' menjadi '${editingSubjectNew.trim()}'.`);
                         setEditingSubjectOld(null);
                         setEditingSubjectNew("");
                       }}
@@ -840,7 +841,7 @@ export default function StudentManagement({
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setEditingSubjectOld(null);
                         setEditingSubjectNew("");
                       }}
@@ -865,18 +866,18 @@ export default function StudentManagement({
                   
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       const clean = newSubjectInput.trim();
                       if (!clean) {
-                        alert("Nama mata pelajaran tidak boleh kosong.");
+                        swalAlert("Nama mata pelajaran tidak boleh kosong.");
                         return;
                       }
                       if (subjects.includes(clean)) {
-                        alert("Mata pelajaran tersebut sudah terdaftar.");
+                        swalAlert("Mata pelajaran tersebut sudah terdaftar.");
                         return;
                       }
                       onAddSubject(clean);
-                      alert(`Berhasil menambahkan mapel '${clean}' ke dalam sistem.`);
+                      swalAlert(`Berhasil menambahkan mapel '${clean}' ke dalam sistem.`);
                       setNewSubjectInput("");
                     }}
                     className="bg-natural-mid hover:bg-natural-dark text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition-colors w-full"
@@ -916,7 +917,7 @@ export default function StudentManagement({
                             <div className="inline-flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   setEditingSubjectOld(sub);
                                   setEditingSubjectNew(sub);
                                 }}
@@ -927,12 +928,12 @@ export default function StudentManagement({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (!confirm(`Hapus mata pelajaran ${sub}? Peringatan: ini mungkin mempengaruhi relasi RPP dan tugas.`)) {
+                                onClick={async () => {
+                                  if (!await swalConfirm(`Hapus mata pelajaran ${sub}? Peringatan: ini mungkin mempengaruhi relasi RPP dan tugas.`)) {
                                     return;
                                   }
                                   onDeleteSubject(sub);
-                                  alert(`Mapel ${sub} telah berhasil dihapus.`);
+                                  swalAlert(`Mapel ${sub} telah berhasil dihapus.`);
                                 }}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                                 title="Hapus Mapel"

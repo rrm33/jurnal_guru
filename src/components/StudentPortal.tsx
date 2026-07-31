@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { 
   User, 
   GraduationCap, 
@@ -111,7 +112,7 @@ export default function StudentPortal({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Harap pilih file gambar (.jpg, .png, .webp).");
+      swalAlert("Harap pilih file gambar (.jpg, .png, .webp).");
       return;
     }
 
@@ -242,7 +243,7 @@ export default function StudentPortal({
     const file = submissionFiles[taskId] || null;
 
     if (!text && !file) {
-      alert("Harap tuliskan jawaban / tautan pengumpulan atau unggah file tugas.");
+      swalAlert("Harap tuliskan jawaban / tautan pengumpulan atau unggah file tugas.");
       return;
     }
 
@@ -257,7 +258,7 @@ export default function StudentPortal({
     };
 
     onSaveSubmission(payload);
-    alert("Tugas berhasil dikirimkan! Menunggu penilaian dari guru.");
+    swalAlert("Tugas berhasil dikirimkan! Menunggu penilaian dari guru.");
     
     // Clear temporary inputs for this task
     setSubmissionTexts(prev => ({ ...prev, [taskId]: "" }));

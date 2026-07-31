@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { Check, Edit, Star, TrendingUp, Filter, Award, Save, AlertCircle, Plus, Paperclip, X, Download, Eye, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Student, Task, TaskSubmission, DevelopmentProgress } from "../types";
 import FilePreviewModal, { PreviewableFile } from "./FilePreviewModal";
@@ -166,7 +167,7 @@ export default function StudentProgress({
   const handleAddLogSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLogNotes) {
-      alert("Harap tuliskan catatan observasi perkembangan.");
+      swalAlert("Harap tuliskan catatan observasi perkembangan.");
       return;
     }
 
@@ -181,7 +182,7 @@ export default function StudentProgress({
 
     onAddDevLog(payload);
     setNewLogNotes("");
-    alert("Progres perkembangan siswa berhasil dicatat!");
+    swalAlert("Progres perkembangan siswa berhasil dicatat!");
   };
 
   const pendingByClass = useMemo(() => {
@@ -232,7 +233,7 @@ export default function StudentProgress({
                 {classes.map(c => (
                   <button
                     key={c}
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedClass(c);
                       setEditingStudentId(null);
                     }}
@@ -259,7 +260,7 @@ export default function StudentProgress({
               <span className="text-xs text-slate-400 font-bold uppercase shrink-0 w-12">Mapel:</span>
               <div className="flex gap-2 overflow-x-auto pb-1 max-w-[250px] md:max-w-md no-scrollbar">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setSelectedSubject("Semua Mapel");
                     setEditingStudentId(null);
                   }}
@@ -274,7 +275,7 @@ export default function StudentProgress({
                 {subjects?.map(s => (
                   <button
                     key={s}
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedSubject(s);
                       setEditingStudentId(null);
                     }}
@@ -608,8 +609,8 @@ export default function StudentProgress({
 
                         <div className="flex justify-end">
                           <button
-                            onClick={() => {
-                              if (confirm("Hapus catatan progres perkembangan ini?")) {
+                            onClick={async () => {
+                              if (await swalConfirm("Hapus catatan progres perkembangan ini?")) {
                                 onDeleteDevLog(log.id);
                               }
                             }}
@@ -801,7 +802,7 @@ export default function StudentProgress({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     const existing = taskSubmissionsMap[student.id];
                     const payload: TaskSubmission = {
                       id: existing ? existing.id : `sub_${Date.now()}_${student.id}`,

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { Plus, Award, AlertTriangle, ShieldAlert, Check, Trash2, Calendar, ThumbsUp, AlertCircle } from "lucide-react";
 import { Student, DisciplineLog } from "../types";
 
@@ -57,7 +58,7 @@ export default function Discipline({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !actionTaken) {
-      alert("Harap lengkapi Kategori dan Tindakan yang Diambil.");
+      swalAlert("Harap lengkapi Kategori dan Tindakan yang Diambil.");
       return;
     }
 
@@ -76,7 +77,7 @@ export default function Discipline({
     // Reset form fields
     setActionTaken("");
     setNotes("");
-    alert("Log kedisiplinan berhasil tersimpan!");
+    swalAlert("Log kedisiplinan berhasil tersimpan!");
   };
 
   // Student specific points calculation (Base score = 100)
@@ -347,8 +348,8 @@ export default function Discipline({
                         </span>
 
                         <button
-                          onClick={() => {
-                            if (confirm("Hapus log kedisiplinan ini? Poin sikap siswa akan dikembalikan semula.")) {
+                          onClick={async () => {
+                            if (await swalConfirm("Hapus log kedisiplinan ini? Poin sikap siswa akan dikembalikan semula.")) {
                               onDeleteLog(log.id);
                             }
                           }}
