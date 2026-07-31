@@ -661,11 +661,11 @@ export default function StudentProgress({
                         min={0}
                         max={activeTaskObj?.maxPoints || 100}
                         value={reviewGrade}
-                        disabled={reviewStatus !== "Selesai"}
-                        onChange={(e) => setReviewGrade(parseInt(e.target.value) || 0)}
-                        className={`w-full bg-white border border-natural-border rounded-xl px-3 py-2 font-mono text-center text-xs font-bold focus:outline-none focus:border-natural-sage ${
-                          reviewStatus !== "Selesai" ? "bg-slate-100 text-slate-400 border-slate-200" : ""
-                        }`}
+                        onChange={(e) => {
+                          setReviewGrade(parseInt(e.target.value) || 0);
+                          setReviewStatus("Selesai");
+                        }}
+                        className="w-full bg-white border border-natural-border rounded-xl px-3 py-2 font-mono text-center text-xs font-bold focus:outline-none focus:border-natural-sage"
                       />
                     </div>
                   </div>
