@@ -155,32 +155,7 @@ export default function App() {
   useEffect(() => { saveData("user_accounts", users); }, [users]);
   useEffect(() => { saveData("app_auth_session", authSession); }, [authSession]);
 
-  // --- LEGACY DATA MIGRATION ---
-  // If the user has old localStorage data with the legacy subject name, migrate it to the new name.
-  useEffect(() => {
-    setLessonPlans(prev => {
-      let migrated = false;
-      const next = prev.map(p => {
-        if (p.subject === "Pemrograman Web & Perangkat Bergerak") {
-          migrated = true;
-          return { ...p, subject: "Pemrograman Mobile" };
-        }
-        return p;
-      });
-      return migrated ? next : prev;
-    });
-    setAttendance(prev => {
-      let migrated = false;
-      const next = prev.map(a => {
-        if (a.subject === "Pemrograman Web & Perangkat Bergerak") {
-          migrated = true;
-          return { ...a, subject: "Pemrograman Mobile" };
-        }
-        return a;
-      });
-      return migrated ? next : prev;
-    });
-  }, []);
+
 
   // --- AUTH & USER HANDLERS ---
   const handleLoginSuccess = (role: "guru" | "siswa", studentData?: Student) => {
@@ -218,11 +193,19 @@ export default function App() {
         const stds = await fetchFromApiOrLocal("students", "students", INITIAL_STUDENTS);
         if (stds && stds.length > 0) setStudents(prev => JSON.stringify(prev) === JSON.stringify(stds) ? prev : stds);
 
-        const lps = await fetchFromApiOrLocal("lesson-plans", "lesson_plans", INITIAL_LESSON_PLANS);
-        if (lps && lps.length > 0) setLessonPlans(prev => JSON.stringify(prev) === JSON.stringify(lps) ? prev : lps);
+        let lps = await fetchFromApiOrLocal("lesson-plans", "lesson_plans", INITIAL_LESSON_PLANS);
+        if (lps && lps.length > 0) {
+          // --- LEGACY DATA MIGRATION ---
+          lps = lps.map(p => p.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...p, subject: "Pemrograman Mobile" } : p);
+          setLessonPlans(prev => JSON.stringify(prev) === JSON.stringify(lps) ? prev : lps);
+        }
 
-        const att = await fetchFromApiOrLocal("attendance", "attendance", INITIAL_ATTENDANCE);
-        if (att && att.length > 0) setAttendance(prev => JSON.stringify(prev) === JSON.stringify(att) ? prev : att);
+        let att = await fetchFromApiOrLocal("attendance", "attendance", INITIAL_ATTENDANCE);
+        if (att && att.length > 0) {
+          // --- LEGACY DATA MIGRATION ---
+          att = att.map(a => a.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...a, subject: "Pemrograman Mobile" } : a);
+          setAttendance(prev => JSON.stringify(prev) === JSON.stringify(att) ? prev : att);
+        }
 
         const mats = await fetchFromApiOrLocal("materials", "materials", INITIAL_MATERIALS);
         if (mats && mats.length > 0) setMaterials(prev => JSON.stringify(prev) === JSON.stringify(mats) ? prev : mats);
