@@ -28,7 +28,7 @@ export function getDbPool(): mysql.Pool | null {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      connectTimeout: 5000,
+      connectTimeout: 1000,
     });
     // Intercept query to cache offline state
     const originalQuery = pool.query.bind(pool);

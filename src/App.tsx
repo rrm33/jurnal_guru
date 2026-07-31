@@ -123,50 +123,17 @@ export default function App() {
   });
 
   // --- SAVE HOOKS / EVENTS ---
-  useEffect(() => { 
-    saveData("teacher_profile", teacherProfile); 
-    saveItemToApi("teacher-profile", teacherProfile);
-  }, [teacherProfile]);
-  useEffect(() => { 
-    saveData("students", students); 
-    saveItemToApi("students", students);
-  }, [students]);
-  useEffect(() => { 
-    saveData("lesson_plans", lessonPlans); 
-    saveItemToApi("lesson-plans", lessonPlans);
-  }, [lessonPlans]);
-  useEffect(() => { 
-    saveData("attendance", attendance); 
-    saveItemToApi("attendance", attendance);
-  }, [attendance]);
-  useEffect(() => { 
-    saveData("materials", materials); 
-    saveItemToApi("materials", materials);
-  }, [materials]);
-  useEffect(() => { 
-    saveData("tasks", tasks); 
-    saveItemToApi("tasks", tasks);
-  }, [tasks]);
-  useEffect(() => { 
-    saveData("task_submissions", submissions); 
-    saveItemToApi("task-submissions", submissions);
-  }, [submissions]);
-  useEffect(() => { 
-    saveData("development_logs", developmentLogs); 
-    saveItemToApi("development-progress", developmentLogs);
-  }, [developmentLogs]);
-  useEffect(() => { 
-    saveData("discipline_logs", disciplineLogs); 
-    saveItemToApi("discipline-logs", disciplineLogs);
-  }, [disciplineLogs]);
-  useEffect(() => { 
-    saveData("exam_grades", examGrades); 
-    saveItemToApi("exam-grades", examGrades);
-  }, [examGrades]);
-  useEffect(() => { 
-    saveData("user_accounts", users); 
-    saveItemToApi("user-accounts", users);
-  }, [users]);
+  useEffect(() => { saveData("teacher_profile", teacherProfile); }, [teacherProfile]);
+  useEffect(() => { saveData("students", students); }, [students]);
+  useEffect(() => { saveData("lesson_plans", lessonPlans); }, [lessonPlans]);
+  useEffect(() => { saveData("attendance", attendance); }, [attendance]);
+  useEffect(() => { saveData("materials", materials); }, [materials]);
+  useEffect(() => { saveData("tasks", tasks); }, [tasks]);
+  useEffect(() => { saveData("task_submissions", submissions); }, [submissions]);
+  useEffect(() => { saveData("development_logs", developmentLogs); }, [developmentLogs]);
+  useEffect(() => { saveData("discipline_logs", disciplineLogs); }, [disciplineLogs]);
+  useEffect(() => { saveData("exam_grades", examGrades); }, [examGrades]);
+  useEffect(() => { saveData("user_accounts", users); }, [users]);
   useEffect(() => { saveData("app_auth_session", authSession); }, [authSession]);
 
   // --- AUTH & USER HANDLERS ---
