@@ -20,9 +20,80 @@ import {
   syncAllDataToJson, saveJsonStudentBulk
 } from "./src/db/jsonStore.ts";
 
+// Utilities for file storage
+function processBase64Photo(base64Str: string, id: string): string {
+  if (!base64Str || !base64Str.startsWith("data:image/")) return base64Str;
+  
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "photos");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) return base64Str;
+
+  const ext = matches[1].split('/')[1]?.replace("jpeg", "jpg") || 'jpg';
+  const buffer = Buffer.from(matches[2], 'base64');
+  const filename = `${id}_${Date.now()}.${ext}`;
+  const filepath = path.join(uploadDir, filename);
+  
+  fs.writeFileSync(filepath, buffer);
+  return `/uploads/photos/${filename}`;
+}
+
+async function uploadToTelegram(base64Str: string, filename: string): Promise<string> {
+  if (!base64Str || !base64Str.startsWith("data:")) return base64Str;
+  
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return base64Str; // fallback if not configured
+
+  const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) return base64Str;
+
+  const buffer = Buffer.from(matches[2], 'base64');
+  const blob = new Blob([buffer], { type: matches[1] });
+  const form = new FormData();
+  form.append("chat_id", chatId);
+  form.append("document", blob, filename || "document.file");
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+      method: "POST",
+      body: form as any
+    });
+    const json = await res.json();
+    if (json.ok && json.result.document) {
+      return `/api/telegram/download/${json.result.document.file_id}`;
+    }
+  } catch (err) {
+    console.error("[Telegram] Upload error", err);
+  }
+  return base64Str; // fallback
+}
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3000;
+
+  // Telegram download route (must be before body parsers if large, but here is fine)
+  app.get("/api/telegram/download/:file_id", async (req, res) => {
+    const fileId = req.params.file_id;
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) return res.status(500).send("Telegram not configured");
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+      const json = await response.json();
+      if (json.ok && json.result.file_path) {
+        // Redirect client to download directly from Telegram
+        res.redirect(`https://api.telegram.org/file/bot${token}/${json.result.file_path}`);
+      } else {
+        res.status(404).send("File not found on Telegram");
+      }
+    } catch (err) {
+      res.status(500).send("Error contacting Telegram API");
+    }
+  });
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -85,12 +156,19 @@ async function startServer() {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS teacher_profile (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          nip VARCHAR(100) NOT NULL,
-          school VARCHAR(255) NOT NULL,
-          subjectGroup VARCHAR(255) NOT NULL
+          name VARCHAR(100) NOT NULL,
+          nip VARCHAR(50) NULL,
+          school VARCHAR(100) NULL,
+          subjectGroup VARCHAR(100) NULL,
+          photoUrl LONGTEXT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
+
+      try {
+        await pool.query("ALTER TABLE teacher_profile ADD COLUMN photoUrl LONGTEXT NULL");
+      } catch (err: any) {
+        // Ignored if column already exists (ER_DUP_FIELDNAME)
+      }
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS students (
@@ -238,7 +316,7 @@ async function startServer() {
     const pool = getDbPool();
     if (pool) {
       try {
-        const [rows]: any = await pool.query("SELECT name, nip, school, subjectGroup FROM teacher_profile LIMIT 1");
+        const [rows]: any = await pool.query("SELECT name, nip, school, subjectGroup, photoUrl FROM teacher_profile LIMIT 1");
         if (rows && rows.length > 0) return res.json(rows[0]);
       } catch (err) {
         // Fallback to JSON store silently if MySQL is offline or not created
@@ -249,19 +327,22 @@ async function startServer() {
 
   app.post("/api/teacher-profile", async (req, res) => {
     const profile = req.body;
+    if (profile.photoUrl) {
+      profile.photoUrl = processBase64Photo(profile.photoUrl, "teacher");
+    }
     saveJsonTeacherProfile(profile);
     const pool = getDbPool();
     if (pool) {
       try {
-        const { name, nip, school, subjectGroup } = profile;
+        const { name, nip, school, subjectGroup, photoUrl } = profile;
         const [rows]: any = await pool.query("SELECT id FROM teacher_profile LIMIT 1");
         if (rows && rows.length > 0) {
-          await pool.query("UPDATE teacher_profile SET name = ?, nip = ?, school = ?, subjectGroup = ? WHERE id = ?", [
-            name, nip, school, subjectGroup, rows[0].id
+          await pool.query("UPDATE teacher_profile SET name = ?, nip = ?, school = ?, subjectGroup = ?, photoUrl = ? WHERE id = ?", [
+            name, nip, school, subjectGroup, photoUrl || null, rows[0].id
           ]);
         } else {
-          await pool.query("INSERT INTO teacher_profile (name, nip, school, subjectGroup) VALUES (?, ?, ?, ?)", [
-            name, nip, school, subjectGroup
+          await pool.query("INSERT INTO teacher_profile (name, nip, school, subjectGroup, photoUrl) VALUES (?, ?, ?, ?, ?)", [
+            name, nip, school, subjectGroup, photoUrl || null
           ]);
         }
       } catch (err) {
@@ -298,6 +379,11 @@ async function startServer() {
     
     // Fallback bulk save to avoid OOM
     if (items.length > 0) {
+      for (const s of items) {
+        if (s && s.photoUrl) {
+          s.photoUrl = processBase64Photo(s.photoUrl, s.id || "student");
+        }
+      }
       saveJsonStudentBulk(items.filter(s => s && s.id));
     }
 
@@ -358,6 +444,11 @@ async function startServer() {
     const pool = getDbPool();
 
     if (items.length > 0) {
+      for (const lp of items) {
+        if (lp && lp.materialFile && lp.materialFile.dataUrl) {
+          lp.materialFile.dataUrl = await uploadToTelegram(lp.materialFile.dataUrl, lp.materialFile.name);
+        }
+      }
       saveJsonLessonPlanBulk(items.filter(lp => lp && lp.id));
     }
 
@@ -472,7 +563,14 @@ async function startServer() {
 
   app.post("/api/materials", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonMaterialBulk(items.filter(m => m && m.id));
+    if (items.length > 0) {
+      for (const m of items) {
+        if (m && m.file && m.file.dataUrl) {
+          m.file.dataUrl = await uploadToTelegram(m.file.dataUrl, m.file.name);
+        }
+      }
+      saveJsonMaterialBulk(items.filter(m => m && m.id));
+    }
 
     const pool = getDbPool();
     if (pool) {
@@ -573,7 +671,14 @@ async function startServer() {
 
   app.post("/api/task-submissions", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonTaskSubmissionBulk(items.filter(s => s && s.id));
+    if (items.length > 0) {
+      for (const s of items) {
+        if (s && s.studentAnswerFile && s.studentAnswerFile.dataUrl) {
+          s.studentAnswerFile.dataUrl = await uploadToTelegram(s.studentAnswerFile.dataUrl, s.studentAnswerFile.name);
+        }
+      }
+      saveJsonTaskSubmissionBulk(items.filter(s => s && s.id));
+    }
 
     const pool = getDbPool();
     if (pool) {
