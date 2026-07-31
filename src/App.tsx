@@ -429,6 +429,34 @@ export default function App() {
     setStudents(prev => prev.map(s => s.className === cleanClass ? { ...s, className: "Belum Ditentukan" } : s));
   };
 
+  const handleAddSubject = (newSubject: string) => {
+    const cleanName = newSubject.trim();
+    if (!cleanName) return;
+    setSubjects(prev => {
+      if (prev.includes(cleanName)) return prev;
+      return [...prev, cleanName].sort();
+    });
+  };
+
+  const handleUpdateSubject = (oldSubject: string, newSubject: string) => {
+    const cleanOld = oldSubject.trim();
+    const cleanNew = newSubject.trim();
+    if (!cleanOld || !cleanNew || cleanOld === cleanNew) return;
+
+    setSubjects(prev => prev.map(s => s === cleanOld ? cleanNew : s).sort());
+    
+    // Cascade update to lesson plans (RPP), attendance, tasks, etc
+    setLessonPlans(prev => prev.map(p => p.subject === cleanOld ? { ...p, subject: cleanNew } : p));
+    setAttendance(prev => prev.map(a => a.subject === cleanOld ? { ...a, subject: cleanNew } : a));
+  };
+
+  const handleDeleteSubject = (subjectToDelete: string) => {
+    const cleanSubject = subjectToDelete.trim();
+    if (!cleanSubject) return;
+
+    setSubjects(prev => prev.filter(s => s !== cleanSubject));
+  };
+
 
   // --- NAVIGATION STATE ---
   const [activeTab, setActiveTab] = useState<TabID>("dashboard");
@@ -1015,6 +1043,7 @@ export default function App() {
                 <StudentManagement 
                   students={students}
                   classes={classes}
+                  subjects={subjects}
                   onAddStudent={handleAddStudent}
                   onUpdateStudent={handleUpdateStudent}
                   onDeleteStudent={handleDeleteStudent}
@@ -1022,6 +1051,9 @@ export default function App() {
                   onAddClass={handleAddClass}
                   onUpdateClass={handleUpdateClass}
                   onDeleteClass={handleDeleteClass}
+                  onAddSubject={handleAddSubject}
+                  onUpdateSubject={handleUpdateSubject}
+                  onDeleteSubject={handleDeleteSubject}
                   onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
                 />
               )}

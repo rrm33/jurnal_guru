@@ -22,6 +22,7 @@ import { Student } from "../types";
 interface StudentManagementProps {
   students: Student[];
   classes: string[];
+  subjects: string[];
   onAddStudent: (student: Student) => void;
   onUpdateStudent: (student: Student) => void;
   onDeleteStudent: (id: string) => void;
@@ -29,12 +30,16 @@ interface StudentManagementProps {
   onAddClass: (className: string) => void;
   onUpdateClass: (oldClassName: string, newClassName: string) => void;
   onDeleteClass: (className: string) => void;
+  onAddSubject: (subject: string) => void;
+  onUpdateSubject: (oldSubject: string, newSubject: string) => void;
+  onDeleteSubject: (subject: string) => void;
   onSelectStudentPhoto?: (student: Student) => void;
 }
 
 export default function StudentManagement({
   students,
   classes,
+  subjects,
   onAddStudent,
   onUpdateStudent,
   onDeleteStudent,
@@ -42,14 +47,22 @@ export default function StudentManagement({
   onAddClass,
   onUpdateClass,
   onDeleteClass,
+  onAddSubject,
+  onUpdateSubject,
+  onDeleteSubject,
   onSelectStudentPhoto
 }: StudentManagementProps) {
-  const [activeSubSection, setActiveSubSection] = useState<"siswa" | "kelas">("siswa");
+  const [activeSubSection, setActiveSubSection] = useState<"siswa" | "kelas" | "mapel">("siswa");
   
   // Class Management form states
   const [newClassNameInput, setNewClassNameInput] = useState("");
   const [editingClassOld, setEditingClassOld] = useState<string | null>(null);
   const [editingClassNew, setEditingClassNew] = useState("");
+
+  // Subject Management form states
+  const [newSubjectInput, setNewSubjectInput] = useState("");
+  const [editingSubjectOld, setEditingSubjectOld] = useState<string | null>(null);
+  const [editingSubjectNew, setEditingSubjectNew] = useState("");
 
   const [selectedClass, setSelectedClass] = useState<string>("Semua Kelas");
   const [searchQuery, setSearchQuery] = useState("");
@@ -340,7 +353,7 @@ export default function StudentManagement({
         )}
       </div>
 
-      {/* Subsection Tab Switcher: Siswa vs Kelas */}
+      {/* Subsection Tab Switcher: Siswa vs Kelas vs Mapel */}
       <div className="flex border-b border-natural-border gap-2 text-xs">
         <button
           onClick={() => setActiveSubSection("siswa")}
@@ -364,6 +377,18 @@ export default function StudentManagement({
         >
           <span className="flex items-center gap-1.5">
             <GraduationCap size={14} /> Kelola Kelas (CRUD)
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveSubSection("mapel")}
+          className={`px-4 py-2.5 font-bold border-b-2 transition-all cursor-pointer ${
+            activeSubSection === "mapel"
+              ? "border-natural-mid text-natural-mid"
+              : "border-transparent text-slate-400 hover:text-natural-dark"
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <FileSpreadsheet size={14} /> Kelola Mata Pelajaran (CRUD)
           </span>
         </button>
       </div>
@@ -754,7 +779,175 @@ export default function StudentManagement({
                 </table>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
+      {activeSubSection === "mapel" && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Mapel CRUD Panel */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Form Create/Edit Mapel */}
+            <div className="bg-white p-5 rounded-2xl border border-natural-border shadow-3xs space-y-4 animate-fade-in">
+              <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                {editingSubjectOld ? "Edit Mata Pelajaran" : "Tambah Mata Pelajaran"}
+              </h4>
+              
+              {editingSubjectOld ? (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-600 font-bold text-xs block">Mapel Sebelumnya</label>
+                    <input
+                      type="text"
+                      className="w-full bg-[#FBFBFA] border border-natural-border rounded-xl px-3.5 py-2.5 text-xs text-slate-400 focus:outline-none"
+                      value={editingSubjectOld}
+                      disabled
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-slate-600 font-bold text-xs block">Nama Mapel Baru</label>
+                    <input
+                      type="text"
+                      placeholder="cth: Dasar Desain Grafis"
+                      className="w-full bg-white border border-natural-border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-natural-sage font-mono"
+                      value={editingSubjectNew}
+                      onChange={(e) => setEditingSubjectNew(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!editingSubjectNew.trim()) {
+                          alert("Nama mapel baru tidak boleh kosong.");
+                          return;
+                        }
+                        if (subjects.includes(editingSubjectNew.trim()) && editingSubjectNew.trim() !== editingSubjectOld) {
+                          alert("Mata Pelajaran tersebut sudah terdaftar.");
+                          return;
+                        }
+                        onUpdateSubject(editingSubjectOld, editingSubjectNew.trim());
+                        alert(`Berhasil memperbarui mapel dari '${editingSubjectOld}' menjadi '${editingSubjectNew.trim()}'.`);
+                        setEditingSubjectOld(null);
+                        setEditingSubjectNew("");
+                      }}
+                      className="bg-natural-mid hover:bg-natural-dark text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition-colors flex-1"
+                    >
+                      Simpan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingSubjectOld(null);
+                        setEditingSubjectNew("");
+                      }}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-3 py-2.5 rounded-xl cursor-pointer transition-colors"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-600 font-bold text-xs block">Nama Mapel Baru</label>
+                    <input
+                      type="text"
+                      placeholder="cth: Pemrograman Berorientasi Objek"
+                      className="w-full bg-[#FBFBFA] border border-natural-border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-natural-sage font-mono"
+                      value={newSubjectInput}
+                      onChange={(e) => setNewSubjectInput(e.target.value)}
+                    />
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const clean = newSubjectInput.trim();
+                      if (!clean) {
+                        alert("Nama mata pelajaran tidak boleh kosong.");
+                        return;
+                      }
+                      if (subjects.includes(clean)) {
+                        alert("Mata pelajaran tersebut sudah terdaftar.");
+                        return;
+                      }
+                      onAddSubject(clean);
+                      alert(`Berhasil menambahkan mapel '${clean}' ke dalam sistem.`);
+                      setNewSubjectInput("");
+                    }}
+                    className="bg-natural-mid hover:bg-natural-dark text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition-colors w-full"
+                  >
+                    Tambah Mapel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* List Subjects Table */}
+            <div className="bg-white p-5 rounded-2xl border border-natural-border shadow-3xs space-y-4 md:col-span-2">
+              <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                Daftar Mata Pelajaran Terdaftar ({subjects.length})
+              </h4>
+
+              <div className="border border-natural-border rounded-xl overflow-hidden text-xs">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#FBFBFA] border-b border-natural-border text-natural-dark font-bold text-xs">
+                      <th className="p-3">No</th>
+                      <th className="p-3">Nama Mata Pelajaran</th>
+                      <th className="p-3 text-center">Aksi Relasi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-natural-border/40 text-xs">
+                    {subjects.map((sub, index) => {
+                      return (
+                        <tr key={sub} className="hover:bg-[#FBFBFA]/30 transition-colors">
+                          <td className="p-3 text-slate-400 font-mono">{index + 1}</td>
+                          <td className="p-3">
+                            <span className="font-bold text-natural-dark font-mono bg-natural-accent/50 text-[10px] px-2 py-0.5 rounded-md border border-natural-border/30">
+                              {sub}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSubjectOld(sub);
+                                  setEditingSubjectNew(sub);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-natural-dark hover:bg-natural-accent rounded-lg transition-colors cursor-pointer"
+                                title="Edit Nama Mapel"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!confirm(`Hapus mata pelajaran ${sub}? Peringatan: ini mungkin mempengaruhi relasi RPP dan tugas.`)) {
+                                    return;
+                                  }
+                                  onDeleteSubject(sub);
+                                  alert(`Mapel ${sub} telah berhasil dihapus.`);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Hapus Mapel"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       )}
