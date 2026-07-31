@@ -11,3 +11,5 @@ data/
 storage/
 vendor/
 bootstrap/
+
+public/storage
