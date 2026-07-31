@@ -72,7 +72,7 @@ async function startServer() {
 
   // Function to initialize MySQL tables automatically
   async function initDbTables() {
-    if (!process.env.DB_HOST || !process.env.DB_NAME) {
+    if (!process.env.DB_HOST || !(process.env.DB_NAME || process.env.DB_DATABASE)) {
       return { success: false, mode: "json_server" };
     }
     const connected = await isDbConnected();

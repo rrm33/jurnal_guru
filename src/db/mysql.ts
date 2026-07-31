@@ -6,7 +6,7 @@ export function getDbPool(): mysql.Pool | null {
   if (pool) return pool;
 
   const rawHost = process.env.DB_HOST;
-  const dbName = process.env.DB_NAME;
+  const dbName = process.env.DB_NAME || process.env.DB_DATABASE;
 
   // Only attempt connection if host and db name are defined
   if (!rawHost || !dbName) {
@@ -20,7 +20,7 @@ export function getDbPool(): mysql.Pool | null {
     pool = mysql.createPool({
       host,
       port: Number(process.env.DB_PORT) || 3306,
-      user: process.env.DB_USER || 'root',
+      user: process.env.DB_USER || process.env.DB_USERNAME || 'root',
       password: process.env.DB_PASSWORD || '',
       database: dbName,
       waitForConnections: true,
@@ -38,10 +38,10 @@ export function getDbPool(): mysql.Pool | null {
 
 export async function testDbConnectionDetailed(): Promise<{ connected: boolean; error?: string; host?: string; database?: string; user?: string }> {
   const host = (process.env.DB_HOST === 'localhost' ? '127.0.0.1' : process.env.DB_HOST) || 'Belum diisi';
-  const database = process.env.DB_NAME || 'Belum diisi';
-  const user = process.env.DB_USER || 'Belum diisi';
+  const database = process.env.DB_NAME || process.env.DB_DATABASE || 'Belum diisi';
+  const user = process.env.DB_USER || process.env.DB_USERNAME || 'Belum diisi';
 
-  if (!process.env.DB_HOST || !process.env.DB_NAME) {
+  if (!process.env.DB_HOST || !(process.env.DB_NAME || process.env.DB_DATABASE)) {
     return {
       connected: false,
       error: "Variabel DB_HOST atau DB_NAME belum dikonfigurasi di Environment Variables cPanel / file .env.",
