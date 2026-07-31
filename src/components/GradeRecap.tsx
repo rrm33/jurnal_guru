@@ -73,11 +73,12 @@ export default function GradeRecap({
       map[s.id] = { total: 0, count: 0 };
     });
 
-    // Accumulate graded submissions
+    // Accumulate graded and waiting submissions
     submissions.forEach(sub => {
-      if (sub.status === "Selesai" && sub.grade !== undefined) {
+      if (sub.status === "Selesai" || sub.status === "Menunggu Penilaian") {
         if (map[sub.studentId]) {
-          map[sub.studentId].total += sub.grade;
+          const gradeToApply = (sub.status === "Selesai" && sub.grade !== undefined) ? sub.grade : 0;
+          map[sub.studentId].total += gradeToApply;
           map[sub.studentId].count++;
         }
       }

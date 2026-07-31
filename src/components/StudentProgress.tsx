@@ -342,7 +342,7 @@ export default function StudentProgress({
                           {/* Grade */}
                           <td className="py-4 px-4.5">
                             <span className="font-mono font-bold text-sm text-natural-dark">
-                              {submission?.status === "Selesai" ? submission.grade : "-"}
+                              {submission?.status === "Selesai" ? submission.grade : (submission?.status === "Menunggu Penilaian" ? "0" : "-")}
                             </span>
                           </td>
 

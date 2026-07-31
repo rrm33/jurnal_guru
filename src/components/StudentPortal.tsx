@@ -633,7 +633,7 @@ export default function StudentPortal({
                             ) : submission?.status === "Menunggu Penilaian" ? (
                               <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-2xs">
                                 <Clock size={12} className="text-amber-600" />
-                                <span>Menunggu Penilaian</span>
+                                <span>Menunggu Penilaian (0 pts)</span>
                               </span>
                             ) : (
                               <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs animate-pulse">
