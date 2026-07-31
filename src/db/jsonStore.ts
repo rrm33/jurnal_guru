@@ -16,6 +16,8 @@ if (!fs.existsSync(DATA_DIR)) {
 interface JsonDbData {
   teacherProfile: any | null;
   students: any[];
+  subjects: string[];
+  classes: string[];
   lessonPlans: any[];
   attendance: any[];
   materials: any[];
@@ -56,6 +58,8 @@ function getInitialDbData(): JsonDbData {
       { id: "std_209", name: "Yusuf Ibrahim", nisn: "0074910294", className: "XI RPL 2", gender: "L" },
       { id: "std_210", name: "Zahra Syafira", nisn: "0083910295", className: "XI RPL 2", gender: "P" }
     ],
+    subjects: ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"],
+    classes: ["XI RPL 1", "XI RPL 2"],
     lessonPlans: [],
     attendance: [],
     materials: [],
@@ -97,6 +101,8 @@ export function readJsonDb(): JsonDbData {
         return {
           teacherProfile: parsed.teacherProfile || null,
           students: Array.isArray(parsed.students) ? parsed.students : [],
+          subjects: Array.isArray(parsed.subjects) ? parsed.subjects : ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"],
+          classes: Array.isArray(parsed.classes) ? parsed.classes : ["XI RPL 1", "XI RPL 2"],
           lessonPlans: Array.isArray(parsed.lessonPlans) ? parsed.lessonPlans : [],
           attendance: Array.isArray(parsed.attendance) ? parsed.attendance : [],
           materials: Array.isArray(parsed.materials) ? parsed.materials : [],
@@ -447,6 +453,26 @@ export function saveJsonExamGradesBulk(examGradesMap: { [studentId: string]: { u
   db.examGrades = { ...db.examGrades, ...examGradesMap };
   writeJsonDb(db);
   return db.examGrades;
+}
+
+// --- SUBJECTS ---
+export function getJsonSubjects() {
+  return readJsonDb().subjects;
+}
+export function saveJsonSubjectsBulk(items: string[]) {
+  const db = readJsonDb();
+  db.subjects = items;
+  writeJsonDb(db);
+}
+
+// --- CLASSES ---
+export function getJsonClasses() {
+  return readJsonDb().classes;
+}
+export function saveJsonClassesBulk(items: string[]) {
+  const db = readJsonDb();
+  db.classes = items;
+  writeJsonDb(db);
 }
 
 // Bulk sync endpoint helper

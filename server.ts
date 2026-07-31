@@ -17,6 +17,8 @@ import {
   getJsonDevelopmentProgress, saveJsonDevelopmentProgress, saveJsonDevelopmentProgressBulk, deleteJsonDevelopmentProgress,
   getJsonDisciplineLogs, saveJsonDisciplineLog, saveJsonDisciplineLogBulk, deleteJsonDisciplineLog,
   getJsonExamGrades, saveJsonExamGrade, saveJsonExamGradesBulk,
+  getJsonSubjects, saveJsonSubjectsBulk,
+  getJsonClasses, saveJsonClassesBulk,
   syncAllDataToJson, saveJsonStudentBulk
 } from "./src/db/jsonStore.ts";
 
@@ -287,6 +289,43 @@ async function startServer() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS subjects (
+          name VARCHAR(255) PRIMARY KEY
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS classes (
+          name VARCHAR(255) PRIMARY KEY
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // Seed subjects and classes if empty
+      const [subjRows]: any = await pool.query("SELECT COUNT(*) as count FROM subjects");
+      if (subjRows[0].count === 0) {
+        await pool.query("INSERT INTO subjects (name) VALUES ('Pemrograman Mobile'), ('Rekayasa Perangkat Lunak')");
+      }
+      
+      const [classRows]: any = await pool.query("SELECT COUNT(*) as count FROM classes");
+      if (classRows[0].count === 0) {
+        await pool.query("INSERT INTO classes (name) VALUES ('XI RPL 1'), ('XI RPL 2')");
+      }
+
+      // --- LEGACY DATA MIGRATION ---
+      // Update any existing "Pemrograman Web & Perangkat Bergerak" to "Pemrograman Mobile"
+      try {
+        await pool.query(`UPDATE lesson_plans SET subject = 'Pemrograman Mobile' WHERE subject = 'Pemrograman Web & Perangkat Bergerak'`);
+        try {
+          await pool.query(`ALTER TABLE attendance ADD COLUMN subject VARCHAR(255) NULL`);
+        } catch(e) {}
+        try {
+          await pool.query(`UPDATE attendance SET subject = 'Pemrograman Mobile' WHERE subject = 'Pemrograman Web & Perangkat Bergerak'`);
+        } catch(e) {}
+      } catch (err) {
+        console.warn("[MySQL] Failed to run legacy migration:", err);
+      }
+
       console.log("[MySQL] Tabel berhasil dibuat / terverifikasi!");
       return { success: true };
     } catch (err: any) {
@@ -354,6 +393,66 @@ async function startServer() {
     }
     res.json({ success: true, profile });
   });
+  // --- SUBJECTS ---
+  app.get("/api/subjects", async (req, res) => {
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT name FROM subjects");
+        if (rows && rows.length > 0) {
+          return res.json(rows.map((r: any) => r.name));
+        }
+      } catch (err) {}
+    }
+    return res.json(getJsonSubjects());
+  });
+
+  app.post("/api/subjects", async (req, res) => {
+    const items = req.body;
+    saveJsonSubjectsBulk(items);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM subjects");
+        if (items.length > 0) {
+          const values = items.map((name: string) => [name]);
+          await pool.query("INSERT INTO subjects (name) VALUES ?", [values]);
+        }
+      } catch (err) {}
+    }
+    res.json({ success: true });
+  });
+
+  // --- CLASSES ---
+  app.get("/api/classes", async (req, res) => {
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT name FROM classes");
+        if (rows && rows.length > 0) {
+          return res.json(rows.map((r: any) => r.name));
+        }
+      } catch (err) {}
+    }
+    return res.json(getJsonClasses());
+  });
+
+  app.post("/api/classes", async (req, res) => {
+    const items = req.body;
+    saveJsonClassesBulk(items);
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM classes");
+        if (items.length > 0) {
+          const values = items.map((name: string) => [name]);
+          await pool.query("INSERT INTO classes (name) VALUES ?", [values]);
+        }
+      } catch (err) {}
+    }
+    res.json({ success: true });
+  });
+
 
   // --- STUDENTS ---
   app.get("/api/students", async (req, res) => {

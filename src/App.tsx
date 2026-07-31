@@ -139,7 +139,25 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem("rpl_subjects", JSON.stringify(subjects));
+    saveItemToApi("subjects", subjects);
   }, [subjects]);
+
+  // --- CLASSES STATE ---
+  const [classes, setClasses] = useState<string[]>(() => {
+    const saved = localStorage.getItem("rpl_classes");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    const fromStudents = Array.from(new Set(INITIAL_STUDENTS.map(s => s.className))).sort();
+    return fromStudents.length > 0 ? fromStudents : ["XI RPL 1", "XI RPL 2", "XII RPL 1"];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("rpl_classes", JSON.stringify(classes));
+    saveItemToApi("classes", classes);
+  }, [classes]);
 
   // --- SAVE HOOKS / EVENTS ---
   useEffect(() => { saveData("teacher_profile", teacherProfile); }, [teacherProfile]);
@@ -189,6 +207,12 @@ export default function App() {
       try {
         const profile = await fetchFromApiOrLocal("teacher-profile", "teacher_profile", DEFAULT_TEACHER_PROFILE);
         if (profile) setTeacherProfile(prev => JSON.stringify(prev) === JSON.stringify(profile) ? prev : profile);
+
+        const subjs = await fetchFromApiOrLocal("subjects", "rpl_subjects", ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"]);
+        if (subjs && subjs.length > 0) setSubjects(prev => JSON.stringify(prev) === JSON.stringify(subjs) ? prev : subjs);
+
+        const cls = await fetchFromApiOrLocal("classes", "rpl_classes", ["XI RPL 1", "XI RPL 2"]);
+        if (cls && cls.length > 0) setClasses(prev => JSON.stringify(prev) === JSON.stringify(cls) ? prev : cls);
 
         const stds = await fetchFromApiOrLocal("students", "students", INITIAL_STUDENTS);
         if (stds && stds.length > 0) setStudents(prev => JSON.stringify(prev) === JSON.stringify(stds) ? prev : stds);
@@ -380,21 +404,7 @@ export default function App() {
 
   }, [lessonPlans, students]);
 
-  // --- CLASSES DATABASE STATE ---
-  const [classes, setClasses] = useState<string[]>(() => {
-    const saved = localStorage.getItem("rpl_classes");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    const fromStudents = Array.from(new Set(INITIAL_STUDENTS.map(s => s.className))).sort();
-    return fromStudents.length > 0 ? fromStudents : ["XI RPL 1", "XI RPL 2", "XII RPL 1"];
-  });
 
-  useEffect(() => {
-    localStorage.setItem("rpl_classes", JSON.stringify(classes));
-  }, [classes]);
 
   const handleAddClass = (newClass: string) => {
     const cleanName = newClass.trim();

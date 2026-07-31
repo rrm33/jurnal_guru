@@ -160,6 +160,8 @@ function getInitialDbData() {
       { id: "std_209", name: "Yusuf Ibrahim", nisn: "0074910294", className: "XI RPL 2", gender: "L" },
       { id: "std_210", name: "Zahra Syafira", nisn: "0083910295", className: "XI RPL 2", gender: "P" }
     ],
+    subjects: ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"],
+    classes: ["XI RPL 1", "XI RPL 2"],
     lessonPlans: [],
     attendance: [],
     materials: [],
@@ -200,6 +202,8 @@ function readJsonDb() {
         return {
           teacherProfile: parsed.teacherProfile || null,
           students: Array.isArray(parsed.students) ? parsed.students : [],
+          subjects: Array.isArray(parsed.subjects) ? parsed.subjects : ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"],
+          classes: Array.isArray(parsed.classes) ? parsed.classes : ["XI RPL 1", "XI RPL 2"],
           lessonPlans: Array.isArray(parsed.lessonPlans) ? parsed.lessonPlans : [],
           attendance: Array.isArray(parsed.attendance) ? parsed.attendance : [],
           materials: Array.isArray(parsed.materials) ? parsed.materials : [],
@@ -436,6 +440,22 @@ function saveJsonExamGradesBulk(examGradesMap) {
   db.examGrades = { ...db.examGrades, ...examGradesMap };
   writeJsonDb(db);
   return db.examGrades;
+}
+function getJsonSubjects() {
+  return readJsonDb().subjects;
+}
+function saveJsonSubjectsBulk(items) {
+  const db = readJsonDb();
+  db.subjects = items;
+  writeJsonDb(db);
+}
+function getJsonClasses() {
+  return readJsonDb().classes;
+}
+function saveJsonClassesBulk(items) {
+  const db = readJsonDb();
+  db.classes = items;
+  writeJsonDb(db);
 }
 function syncAllDataToJson(allData) {
   const db = readJsonDb();
@@ -696,6 +716,37 @@ async function startServer() {
           notes TEXT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
+      await pool2.query(`
+        CREATE TABLE IF NOT EXISTS subjects (
+          name VARCHAR(255) PRIMARY KEY
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+      await pool2.query(`
+        CREATE TABLE IF NOT EXISTS classes (
+          name VARCHAR(255) PRIMARY KEY
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+      const [subjRows] = await pool2.query("SELECT COUNT(*) as count FROM subjects");
+      if (subjRows[0].count === 0) {
+        await pool2.query("INSERT INTO subjects (name) VALUES ('Pemrograman Mobile'), ('Rekayasa Perangkat Lunak')");
+      }
+      const [classRows] = await pool2.query("SELECT COUNT(*) as count FROM classes");
+      if (classRows[0].count === 0) {
+        await pool2.query("INSERT INTO classes (name) VALUES ('XI RPL 1'), ('XI RPL 2')");
+      }
+      try {
+        await pool2.query(`UPDATE lesson_plans SET subject = 'Pemrograman Mobile' WHERE subject = 'Pemrograman Web & Perangkat Bergerak'`);
+        try {
+          await pool2.query(`ALTER TABLE attendance ADD COLUMN subject VARCHAR(255) NULL`);
+        } catch (e) {
+        }
+        try {
+          await pool2.query(`UPDATE attendance SET subject = 'Pemrograman Mobile' WHERE subject = 'Pemrograman Web & Perangkat Bergerak'`);
+        } catch (e) {
+        }
+      } catch (err) {
+        console.warn("[MySQL] Failed to run legacy migration:", err);
+      }
       console.log("[MySQL] Tabel berhasil dibuat / terverifikasi!");
       return { success: true };
     } catch (err) {
@@ -763,6 +814,64 @@ async function startServer() {
       }
     }
     res.json({ success: true, profile });
+  });
+  app.get("/api/subjects", async (req, res) => {
+    const pool2 = getDbPool();
+    if (pool2) {
+      try {
+        const [rows] = await pool2.query("SELECT name FROM subjects");
+        if (rows && rows.length > 0) {
+          return res.json(rows.map((r) => r.name));
+        }
+      } catch (err) {
+      }
+    }
+    return res.json(getJsonSubjects());
+  });
+  app.post("/api/subjects", async (req, res) => {
+    const items = req.body;
+    saveJsonSubjectsBulk(items);
+    const pool2 = getDbPool();
+    if (pool2) {
+      try {
+        await pool2.query("DELETE FROM subjects");
+        if (items.length > 0) {
+          const values = items.map((name) => [name]);
+          await pool2.query("INSERT INTO subjects (name) VALUES ?", [values]);
+        }
+      } catch (err) {
+      }
+    }
+    res.json({ success: true });
+  });
+  app.get("/api/classes", async (req, res) => {
+    const pool2 = getDbPool();
+    if (pool2) {
+      try {
+        const [rows] = await pool2.query("SELECT name FROM classes");
+        if (rows && rows.length > 0) {
+          return res.json(rows.map((r) => r.name));
+        }
+      } catch (err) {
+      }
+    }
+    return res.json(getJsonClasses());
+  });
+  app.post("/api/classes", async (req, res) => {
+    const items = req.body;
+    saveJsonClassesBulk(items);
+    const pool2 = getDbPool();
+    if (pool2) {
+      try {
+        await pool2.query("DELETE FROM classes");
+        if (items.length > 0) {
+          const values = items.map((name) => [name]);
+          await pool2.query("INSERT INTO classes (name) VALUES ?", [values]);
+        }
+      } catch (err) {
+      }
+    }
+    res.json({ success: true });
   });
   app.get("/api/students", async (req, res) => {
     const pool2 = getDbPool();
