@@ -849,14 +849,27 @@ async function startServer() {
       app.use(vite.middlewares);
     } catch (err) {
       console.error("[Vite] Failed to start Vite middleware, falling back to static dist:", err);
-      app.use(express.static(distPath));
+      app.use(express.static(distPath, { index: false }));
       app.get("*", (req, res) => {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         res.sendFile(path.join(distPath, "index.html"));
       });
     }
   } else {
-    app.use(express.static(distPath));
+    // Serve static assets with long cache, but disable cache for index.html
+    app.use(express.static(distPath, { 
+      index: false,
+      setHeaders: (res, path) => {
+        if (path.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        } else {
+          // JS/CSS are hashed, they can be cached
+          res.setHeader('Cache-Control', 'public, max-age=31536000');
+        }
+      }
+    }));
     app.get("*", (req, res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

@@ -1208,14 +1208,25 @@ async function startServer() {
       app.use(vite.middlewares);
     } catch (err) {
       console.error("[Vite] Failed to start Vite middleware, falling back to static dist:", err);
-      app.use(import_express.default.static(distPath));
+      app.use(import_express.default.static(distPath, { index: false }));
       app.get("*", (req, res) => {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         res.sendFile(import_path2.default.join(distPath, "index.html"));
       });
     }
   } else {
-    app.use(import_express.default.static(distPath));
+    app.use(import_express.default.static(distPath, {
+      index: false,
+      setHeaders: (res, path3) => {
+        if (path3.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        } else {
+          res.setHeader("Cache-Control", "public, max-age=31536000");
+        }
+      }
+    }));
     app.get("*", (req, res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(import_path2.default.join(distPath, "index.html"));
     });
   }
