@@ -156,6 +156,20 @@ export function saveJsonStudent(student: any) {
   return student;
 }
 
+export function saveJsonStudentBulk(students: any[]) {
+  const db = readJsonDb();
+  for (const student of students) {
+    const idx = db.students.findIndex(s => s.id === student.id);
+    if (idx >= 0) {
+      db.students[idx] = { ...db.students[idx], ...student };
+    } else {
+      db.students.push(student);
+    }
+  }
+  writeJsonDb(db);
+  return true;
+}
+
 export function deleteJsonStudent(id: string) {
   const db = readJsonDb();
   db.students = db.students.filter(s => s.id !== id);
@@ -178,6 +192,20 @@ export function saveJsonLessonPlan(plan: any) {
   }
   writeJsonDb(db);
   return plan;
+}
+
+export function saveJsonLessonPlanBulk(plans: any[]) {
+  const db = readJsonDb();
+  for (const plan of plans) {
+    const idx = db.lessonPlans.findIndex(p => p.id === plan.id);
+    if (idx >= 0) {
+      db.lessonPlans[idx] = { ...db.lessonPlans[idx], ...plan };
+    } else {
+      db.lessonPlans.push(plan);
+    }
+  }
+  writeJsonDb(db);
+  return true;
 }
 
 export function deleteJsonLessonPlan(id: string) {
@@ -235,6 +263,20 @@ export function saveJsonMaterial(mat: any) {
   return mat;
 }
 
+export function saveJsonMaterialBulk(materials: any[]) {
+  const db = readJsonDb();
+  for (const mat of materials) {
+    const idx = db.materials.findIndex(m => m.id === mat.id);
+    if (idx >= 0) {
+      db.materials[idx] = { ...db.materials[idx], ...mat };
+    } else {
+      db.materials.push(mat);
+    }
+  }
+  writeJsonDb(db);
+  return true;
+}
+
 export function deleteJsonMaterial(id: string) {
   const db = readJsonDb();
   db.materials = db.materials.filter(m => m.id !== id);
@@ -257,6 +299,20 @@ export function saveJsonTask(task: any) {
   }
   writeJsonDb(db);
   return task;
+}
+
+export function saveJsonTaskBulk(tasks: any[]) {
+  const db = readJsonDb();
+  for (const task of tasks) {
+    const idx = db.tasks.findIndex(t => t.id === task.id);
+    if (idx >= 0) {
+      db.tasks[idx] = { ...db.tasks[idx], ...task };
+    } else {
+      db.tasks.push(task);
+    }
+  }
+  writeJsonDb(db);
+  return true;
 }
 
 export function deleteJsonTask(id: string) {
@@ -283,6 +339,20 @@ export function saveJsonTaskSubmission(sub: any) {
   return sub;
 }
 
+export function saveJsonTaskSubmissionBulk(submissions: any[]) {
+  const db = readJsonDb();
+  for (const sub of submissions) {
+    const idx = db.taskSubmissions.findIndex(s => s.id === sub.id);
+    if (idx >= 0) {
+      db.taskSubmissions[idx] = { ...db.taskSubmissions[idx], ...sub };
+    } else {
+      db.taskSubmissions.push(sub);
+    }
+  }
+  writeJsonDb(db);
+  return true;
+}
+
 export function getJsonDevelopmentProgress() {
   const db = readJsonDb();
   return db.developmentProgress;
@@ -298,6 +368,20 @@ export function saveJsonDevelopmentProgress(prog: any) {
   }
   writeJsonDb(db);
   return prog;
+}
+
+export function saveJsonDevelopmentProgressBulk(progress: any[]) {
+  const db = readJsonDb();
+  for (const prog of progress) {
+    const idx = db.developmentProgress.findIndex(p => p.id === prog.id);
+    if (idx >= 0) {
+      db.developmentProgress[idx] = { ...db.developmentProgress[idx], ...prog };
+    } else {
+      db.developmentProgress.push(prog);
+    }
+  }
+  writeJsonDb(db);
+  return true;
 }
 
 export function deleteJsonDevelopmentProgress(id: string) {
@@ -322,6 +406,20 @@ export function saveJsonDisciplineLog(disc: any) {
   }
   writeJsonDb(db);
   return disc;
+}
+
+export function saveJsonDisciplineLogBulk(logs: any[]) {
+  const db = readJsonDb();
+  for (const disc of logs) {
+    const idx = db.disciplineLogs.findIndex(d => d.id === disc.id);
+    if (idx >= 0) {
+      db.disciplineLogs[idx] = { ...db.disciplineLogs[idx], ...disc };
+    } else {
+      db.disciplineLogs.push(disc);
+    }
+  }
+  writeJsonDb(db);
+  return true;
 }
 
 export function deleteJsonDisciplineLog(id: string) {

@@ -9,15 +9,15 @@ import {
   readJsonDb,
   getJsonTeacherProfile, saveJsonTeacherProfile,
   getJsonStudents, saveJsonStudent, deleteJsonStudent,
-  getJsonLessonPlans, saveJsonLessonPlan, deleteJsonLessonPlan,
+  getJsonLessonPlans, saveJsonLessonPlan, saveJsonLessonPlanBulk, deleteJsonLessonPlan,
   getJsonAttendance, saveJsonAttendance, saveJsonAttendanceBulk,
-  getJsonMaterials, saveJsonMaterial, deleteJsonMaterial,
-  getJsonTasks, saveJsonTask, deleteJsonTask,
-  getJsonTaskSubmissions, saveJsonTaskSubmission,
-  getJsonDevelopmentProgress, saveJsonDevelopmentProgress, deleteJsonDevelopmentProgress,
-  getJsonDisciplineLogs, saveJsonDisciplineLog, deleteJsonDisciplineLog,
+  getJsonMaterials, saveJsonMaterial, saveJsonMaterialBulk, deleteJsonMaterial,
+  getJsonTasks, saveJsonTask, saveJsonTaskBulk, deleteJsonTask,
+  getJsonTaskSubmissions, saveJsonTaskSubmission, saveJsonTaskSubmissionBulk,
+  getJsonDevelopmentProgress, saveJsonDevelopmentProgress, saveJsonDevelopmentProgressBulk, deleteJsonDevelopmentProgress,
+  getJsonDisciplineLogs, saveJsonDisciplineLog, saveJsonDisciplineLogBulk, deleteJsonDisciplineLog,
   getJsonExamGrades, saveJsonExamGrade, saveJsonExamGradesBulk,
-  syncAllDataToJson
+  syncAllDataToJson, saveJsonStudentBulk
 } from "./src/db/jsonStore.ts";
 
 async function startServer() {
@@ -295,10 +295,15 @@ async function startServer() {
     const body = req.body;
     const items = Array.isArray(body) ? body : [body];
     const pool = getDbPool();
-    for (const student of items) {
-      if (student && student.id) {
-        saveJsonStudent(student);
-        if (pool) {
+    
+    // Fallback bulk save to avoid OOM
+    if (items.length > 0) {
+      saveJsonStudentBulk(items.filter(s => s && s.id));
+    }
+
+    if (pool) {
+      for (const student of items) {
+        if (student && student.id) {
           try {
             const { id, name, nisn, className, gender, photoUrl, password, hasChangedPassword } = student;
             await pool.query(
@@ -306,7 +311,7 @@ async function startServer() {
               [id, name, nisn, className, gender, photoUrl || null, password || null, hasChangedPassword ? 1 : 0]
             );
           } catch (err) {
-            // Saved in JSON store
+            // Error ignored
           }
         }
       }
@@ -348,22 +353,31 @@ async function startServer() {
   });
 
   app.post("/api/lesson-plans", async (req, res) => {
-    const lp = req.body;
-    saveJsonLessonPlan(lp);
+    const body = req.body;
+    const items = Array.isArray(body) ? body : [body];
     const pool = getDbPool();
+
+    if (items.length > 0) {
+      saveJsonLessonPlanBulk(items.filter(lp => lp && lp.id));
+    }
+
     if (pool) {
-      try {
-        await pool.query(`
-          REPLACE INTO lesson_plans 
-          (id, week, semester, subject, className, topic, competency, activities, resources, status, materialText, materialFile, taskTitle, taskDescription, taskMaxPoints, taskDeadline)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          lp.id, lp.week, lp.semester, lp.subject, lp.className, lp.topic, lp.competency, lp.activities, lp.resources, lp.status,
-          lp.materialText || null, lp.materialFile ? JSON.stringify(lp.materialFile) : null,
-          lp.taskTitle || null, lp.taskDescription || null, lp.taskMaxPoints || 100, lp.taskDeadline || null
-        ]);
-      } catch (err) {
-        // Saved in JSON store
+      for (const lp of items) {
+        if (lp && lp.id) {
+          try {
+            await pool.query(`
+              REPLACE INTO lesson_plans 
+              (id, week, semester, subject, className, topic, competency, activities, resources, status, materialText, materialFile, taskTitle, taskDescription, taskMaxPoints, taskDeadline)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              lp.id, lp.week, lp.semester, lp.subject, lp.className, lp.topic, lp.competency, lp.activities, lp.resources, lp.status,
+              lp.materialText || null, lp.materialFile ? JSON.stringify(lp.materialFile) : null,
+              lp.taskTitle || null, lp.taskDescription || null, lp.taskMaxPoints || 100, lp.taskDeadline || null
+            ]);
+          } catch (err) {
+            // Error ignored
+          }
+        }
       }
     }
     res.json({ success: true });
@@ -457,17 +471,22 @@ async function startServer() {
   });
 
   app.post("/api/materials", async (req, res) => {
-    const m = req.body;
-    saveJsonMaterial(m);
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length > 0) saveJsonMaterialBulk(items.filter(m => m && m.id));
+
     const pool = getDbPool();
     if (pool) {
-      try {
-        await pool.query(`
-          REPLACE INTO materials (id, className, lessonPlanId, title, content, category, createdAt, file)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [m.id, m.className, m.lessonPlanId || null, m.title, m.content, m.category, m.createdAt, m.file ? JSON.stringify(m.file) : null]);
-      } catch (err) {
-        // Saved in JSON store
+      for (const m of items) {
+        if (m && m.id) {
+          try {
+            await pool.query(`
+              REPLACE INTO materials (id, className, lessonPlanId, title, content, category, createdAt, file)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [m.id, m.className, m.lessonPlanId || null, m.title, m.content, m.category, m.createdAt, m.file ? JSON.stringify(m.file) : null]);
+          } catch (err) {
+            // Error ignored
+          }
+        }
       }
     }
     res.json({ success: true });
@@ -501,17 +520,22 @@ async function startServer() {
   });
 
   app.post("/api/tasks", async (req, res) => {
-    const t = req.body;
-    saveJsonTask(t);
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length > 0) saveJsonTaskBulk(items.filter(t => t && t.id));
+
     const pool = getDbPool();
     if (pool) {
-      try {
-        await pool.query(`
-          REPLACE INTO tasks (id, className, title, description, maxPoints, deadline, createdAt, lessonPlanId)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [t.id, t.className, t.title, t.description, t.maxPoints || 100, t.deadline, t.createdAt, t.lessonPlanId || null]);
-      } catch (err) {
-        // Saved in JSON store
+      for (const t of items) {
+        if (t && t.id) {
+          try {
+            await pool.query(`
+              REPLACE INTO tasks (id, className, title, description, maxPoints, deadline, createdAt, lessonPlanId)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [t.id, t.className, t.title, t.description, t.maxPoints || 100, t.deadline, t.createdAt, t.lessonPlanId || null]);
+          } catch (err) {
+            // Error ignored
+          }
+        }
       }
     }
     res.json({ success: true });
@@ -548,20 +572,25 @@ async function startServer() {
   });
 
   app.post("/api/task-submissions", async (req, res) => {
-    const s = req.body;
-    saveJsonTaskSubmission(s);
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length > 0) saveJsonTaskSubmissionBulk(items.filter(s => s && s.id));
+
     const pool = getDbPool();
     if (pool) {
-      try {
-        await pool.query(`
-          REPLACE INTO task_submissions (id, taskId, studentId, submissionDate, status, grade, feedback, studentAnswerText, studentAnswerFile)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          s.id, s.taskId, s.studentId, s.submissionDate || null, s.status, s.grade ?? null, s.feedback || null, s.studentAnswerText || null,
-          s.studentAnswerFile ? JSON.stringify(s.studentAnswerFile) : null
-        ]);
-      } catch (err) {
-        // Saved in JSON store
+      for (const s of items) {
+        if (s && s.id) {
+          try {
+            await pool.query(`
+              REPLACE INTO task_submissions (id, taskId, studentId, submissionDate, status, grade, feedback, studentAnswerText, studentAnswerFile)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              s.id, s.taskId, s.studentId, s.submissionDate || null, s.status, s.grade ?? null, s.feedback || null, s.studentAnswerText || null,
+              s.studentAnswerFile ? JSON.stringify(s.studentAnswerFile) : null
+            ]);
+          } catch (err) {
+            // Error ignored
+          }
+        }
       }
     }
     res.json({ success: true });
@@ -582,17 +611,22 @@ async function startServer() {
   });
 
   app.post("/api/development-progress", async (req, res) => {
-    const p = req.body;
-    saveJsonDevelopmentProgress(p);
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length > 0) saveJsonDevelopmentProgressBulk(items.filter(p => p && p.id));
+
     const pool = getDbPool();
     if (pool) {
-      try {
-        await pool.query(`
-          REPLACE INTO development_progress (id, studentId, date, aspect, status, notes)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `, [p.id, p.studentId, p.date, p.aspect, p.status, p.notes]);
-      } catch (err) {
-        // Saved in JSON store
+      for (const p of items) {
+        if (p && p.id) {
+          try {
+            await pool.query(`
+              REPLACE INTO development_progress (id, studentId, date, aspect, status, notes)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `, [p.id, p.studentId, p.date, p.aspect, p.status, p.notes || null]);
+          } catch (err) {
+            // Error ignored
+          }
+        }
       }
     }
     res.json({ success: true });
@@ -624,17 +658,22 @@ async function startServer() {
   });
 
   app.post("/api/discipline-logs", async (req, res) => {
-    const d = req.body;
-    saveJsonDisciplineLog(d);
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length > 0) saveJsonDisciplineLogBulk(items.filter(l => l && l.id));
+
     const pool = getDbPool();
     if (pool) {
-      try {
-        await pool.query(`
-          REPLACE INTO discipline_logs (id, studentId, date, type, category, points, actionTaken, notes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [d.id, d.studentId, d.date, d.type, d.category, d.points, d.actionTaken || null, d.notes || null]);
-      } catch (err) {
-        // Saved in JSON store
+      for (const l of items) {
+        if (l && l.id) {
+          try {
+            await pool.query(`
+              REPLACE INTO discipline_logs (id, studentId, date, type, category, points, actionTaken, notes)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [l.id, l.studentId, l.date, l.type, l.category, l.points, l.actionTaken || null, l.notes || null]);
+          } catch (err) {
+            // Error ignored
+          }
+        }
       }
     }
     res.json({ success: true });
