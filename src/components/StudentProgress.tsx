@@ -178,6 +178,20 @@ export default function StudentProgress({
     alert("Progres perkembangan siswa berhasil dicatat!");
   };
 
+  const pendingByClass = useMemo(() => {
+    const counts: Record<string, number> = {};
+    classes.forEach(c => counts[c] = 0);
+    
+    const pendingSubs = submissions.filter(sub => sub.status === "Menunggu Penilaian");
+    pendingSubs.forEach(sub => {
+      const student = students.find(s => s.id === sub.studentId);
+      if (student && student.className && counts[student.className] !== undefined) {
+        counts[student.className]++;
+      }
+    });
+    return counts;
+  }, [submissions, students, classes]);
+
   return (
     <div id="progress-root" className="space-y-6">
       {/* Tab Select & Class Select Header */}
@@ -215,13 +229,20 @@ export default function StudentProgress({
                   setSelectedClass(c);
                   setEditingStudentId(null);
                 }}
-                className={`shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                className={`flex items-center shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
                   selectedClass === c 
                     ? "bg-[#2C3E2D] text-white"
                     : "bg-natural-accent hover:bg-natural-light text-natural-dark border border-natural-border"
                 }`}
               >
                 {c}
+                {pendingByClass[c] > 0 && (
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] ${
+                    selectedClass === c ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {pendingByClass[c]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
