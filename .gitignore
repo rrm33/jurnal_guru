@@ -5,3 +5,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+dist/
+data/
+storage/
+vendor/
+bootstrap/
