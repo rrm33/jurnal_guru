@@ -57,6 +57,7 @@ export interface Attendance {
   id: string;
   date: string; // YYYY-MM-DD
   className: string;
+  subject?: string; // Optional for backward compatibility, but recommended
   studentId: string;
   status: AttendanceStatus;
   notes?: string;
@@ -66,6 +67,7 @@ export interface Attendance {
 export interface Material {
   id: string;
   className: string;
+  subject?: string;
   lessonPlanId?: string;
   title: string;
   content: string; // rich text or link
@@ -82,6 +84,7 @@ export interface Material {
 export interface Task {
   id: string;
   className: string;
+  subject?: string;
   title: string;
   description: string;
   maxPoints: number;
@@ -128,6 +131,7 @@ export interface DisciplineLog {
 
 export interface GradeRecap {
   studentId: string;
+  subject: string;
   averageTasks: number;
   uts: number;
   uas: number;
@@ -135,6 +139,15 @@ export interface GradeRecap {
   finalGrade: number;
   isPassed: boolean;
 }
+
+export type ExamGradesData = {
+  [studentId: string]: {
+    [subject: string]: {
+      uts: number;
+      uas: number;
+    }
+  }
+};
 
 export interface TeacherProfile {
   name: string;

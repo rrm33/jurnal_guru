@@ -12,6 +12,7 @@ interface StudentProgressProps {
   onAddDevLog: (log: DevelopmentProgress) => void;
   onDeleteDevLog: (id: string) => void;
   classes: string[];
+  subjects?: string[];
   initialProgressClass?: string;
   initialProgressTaskId?: string;
   onClearInitialProgress?: () => void;
@@ -27,6 +28,7 @@ export default function StudentProgress({
   onAddDevLog,
   onDeleteDevLog,
   classes,
+  subjects,
   initialProgressClass,
   initialProgressTaskId,
   onClearInitialProgress,
@@ -34,12 +36,16 @@ export default function StudentProgress({
 }: StudentProgressProps) {
   const [activeTab, setActiveTab] = useState<"tasks" | "development">("tasks");
   const [selectedClass, setSelectedClass] = useState<string>(classes[0] || "XI RPL 1");
+  const [selectedSubject, setSelectedSubject] = useState<string>("Semua Mapel");
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
 
   // --- SUB-TAB: TASK GRADING STATE ---
   const classTasks = useMemo(() => {
-    return tasks.filter(t => t.className === selectedClass);
-  }, [tasks, selectedClass]);
+    return tasks.filter(t => 
+      t.className === selectedClass && 
+      (selectedSubject === "Semua Mapel" || t.subject === selectedSubject)
+    );
+  }, [tasks, selectedClass, selectedSubject]);
 
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
 
@@ -219,35 +225,72 @@ export default function StudentProgress({
           </button>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
-          <span className="text-xs text-slate-400 font-bold uppercase shrink-0">Kelas:</span>
-          <div className="flex gap-2 overflow-x-auto pb-1 max-w-[250px] md:max-w-md no-scrollbar">
-            {classes.map(c => (
-              <button
-                key={c}
-                onClick={() => {
-                  setSelectedClass(c);
-                  setEditingStudentId(null);
-                }}
-                className={`flex items-center shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                  selectedClass === c 
-                    ? "bg-[#2C3E2D] text-white"
-                    : "bg-natural-accent hover:bg-natural-light text-natural-dark border border-natural-border"
-                }`}
-              >
-                {c}
-                {pendingByClass[c] > 0 && (
-                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] ${
-                    selectedClass === c ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"
-                  }`}>
-                    {pendingByClass[c]}
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+              <span className="text-xs text-slate-400 font-bold uppercase shrink-0 w-12">Kelas:</span>
+              <div className="flex gap-2 overflow-x-auto pb-1 max-w-[250px] md:max-w-md no-scrollbar">
+                {classes.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      setSelectedClass(c);
+                      setEditingStudentId(null);
+                    }}
+                    className={`flex items-center shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                      selectedClass === c 
+                        ? "bg-[#2C3E2D] text-white"
+                        : "bg-natural-accent hover:bg-natural-light text-natural-dark border border-natural-border"
+                    }`}
+                  >
+                    {c}
+                    {pendingByClass[c] > 0 && (
+                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] ${
+                        selectedClass === c ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {pendingByClass[c]}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+              <span className="text-xs text-slate-400 font-bold uppercase shrink-0 w-12">Mapel:</span>
+              <div className="flex gap-2 overflow-x-auto pb-1 max-w-[250px] md:max-w-md no-scrollbar">
+                <button
+                  onClick={() => {
+                    setSelectedSubject("Semua Mapel");
+                    setEditingStudentId(null);
+                  }}
+                  className={`flex items-center shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                    selectedSubject === "Semua Mapel" 
+                      ? "bg-indigo-600 text-white"
+                      : "bg-natural-accent hover:bg-natural-light text-natural-dark border border-natural-border"
+                  }`}
+                >
+                  Semua Mapel
+                </button>
+                {subjects?.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setSelectedSubject(s);
+                      setEditingStudentId(null);
+                    }}
+                    className={`flex items-center shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                      selectedSubject === s 
+                        ? "bg-indigo-600 text-white"
+                        : "bg-natural-accent hover:bg-natural-light text-natural-dark border border-natural-border"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* --- CONTENT FOR TAB 1: TASK GRADING --- */}
       {activeTab === "tasks" && (

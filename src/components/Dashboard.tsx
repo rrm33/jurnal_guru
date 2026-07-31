@@ -31,6 +31,7 @@ interface DashboardProps {
   attendance: Attendance[];
   submissions: TaskSubmission[];
   disciplineLogs: DisciplineLog[];
+  subjects?: string[];
 }
 
 export default function Dashboard({
@@ -38,7 +39,8 @@ export default function Dashboard({
   lessonPlans,
   attendance,
   submissions,
-  disciplineLogs
+  disciplineLogs,
+  subjects
 }: DashboardProps) {
   // 1. Metric Calculations
   const totalStudents = students.length;
@@ -170,7 +172,10 @@ export default function Dashboard({
             <Users size={14} /> {totalStudents} Siswa RPL Terdaftar
           </span>
           <span className="bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-xs flex items-center gap-1.5 border border-white/5 text-natural-light">
-            <BookOpen size={14} /> {totalClasses} Kelas Bimbingan
+            <BookOpen size={14} /> {totalClasses} Kelas
+          </span>
+          <span className="bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-xs flex items-center gap-1.5 border border-white/5 text-natural-light">
+            <Award size={14} /> {subjects?.length || 0} Mata Pelajaran
           </span>
           <span className="bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-xs flex items-center gap-1.5 border border-white/5 text-natural-light">
             <Calendar size={14} /> Progres RPP: {lessonProgressPercent}%

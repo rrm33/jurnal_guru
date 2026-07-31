@@ -8,6 +8,7 @@ interface LessonPlansProps {
   onUpdatePlan: (plan: LessonPlan) => void;
   onDeletePlan: (id: string) => void;
   classes: string[];
+  subjects: string[];
   onRecordAttendance?: (plan: LessonPlan) => void;
   onOpenGrading?: (plan: LessonPlan) => void;
 }
@@ -18,10 +19,12 @@ export default function LessonPlans({
   onUpdatePlan,
   onDeletePlan,
   classes,
+  subjects,
   onRecordAttendance,
   onOpenGrading
 }: LessonPlansProps) {
   const [selectedClass, setSelectedClass] = useState<string>("Semua Kelas");
+  const [selectedSubject, setSelectedSubject] = useState<string>("Semua Mapel");
   const [isAdding, setIsAdding] = useState(false);
   const [editingPlan, setEditingPlan] = useState<LessonPlan | null>(null);
   const [expandedPlanIds, setExpandedPlanIds] = useState<string[]>([]);
@@ -36,7 +39,7 @@ export default function LessonPlans({
   // Form states
   const [week, setWeek] = useState<number>(1);
   const [semester, setSemester] = useState<1 | 2>(1);
-  const [subject, setSubject] = useState("Pemrograman Web & Perangkat Bergerak");
+  const [subject, setSubject] = useState(subjects[0] || "Mata Pelajaran");
   const [className, setClassName] = useState(classes[0] || "XI RPL 1");
   const [selectedClassesForNew, setSelectedClassesForNew] = useState<string[]>(classes.length > 0 ? [classes[0]] : []);
   const [topic, setTopic] = useState("");
@@ -54,14 +57,16 @@ export default function LessonPlans({
   const [taskDeadline, setTaskDeadline] = useState("");
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  const filteredPlans = lessonPlans.filter(p => 
-    selectedClass === "Semua Kelas" || p.className === selectedClass
-  ).sort((a, b) => a.week - b.week);
+  const filteredPlans = lessonPlans.filter(p => {
+    const matchClass = selectedClass === "Semua Kelas" || p.className === selectedClass;
+    const matchSubject = selectedSubject === "Semua Mapel" || p.subject === selectedSubject;
+    return matchClass && matchSubject;
+  }).sort((a, b) => a.week - b.week);
 
   const resetForm = () => {
     setWeek(lessonPlans.length + 1);
     setSemester(1);
-    setSubject("Pemrograman Web & Perangkat Bergerak");
+    setSubject(subjects[0] || "Mata Pelajaran");
     setClassName(classes[0] || "XI RPL 1");
     setSelectedClassesForNew(classes.length > 0 ? [classes[0]] : []);
     setTopic("");
@@ -253,6 +258,15 @@ export default function LessonPlans({
             <option value="Semua Kelas">Semua Kelas</option>
             {classes.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            className="bg-natural-accent border border-natural-border text-natural-dark text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-natural-sage"
+          >
+            <option value="Semua Mapel">Semua Mapel</option>
+            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
           
           <button
             onClick={handleOpenAdd}
@@ -309,14 +323,14 @@ export default function LessonPlans({
             {/* Subject & Class */}
             <div className={`space-y-1.5 ${!editingPlan ? 'md:col-span-1' : ''}`}>
               <label className="text-slate-600 font-bold text-xs block">Mata Pelajaran</label>
-              <input
-                type="text"
+              <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="cth: Pemrograman Web"
                 className="w-full bg-white border border-natural-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-natural-sage"
                 required
-              />
+              >
+                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
 
             {editingPlan ? (
@@ -631,7 +645,7 @@ export default function LessonPlans({
                       <div className="flex flex-wrap items-center gap-1.5 mb-1">
                         <span className="bg-natural-accent text-natural-dark px-2 py-0.5 rounded text-[10px] font-mono font-bold">{plan.className}</span>
                         <span className="bg-natural-accent text-natural-dark px-2 py-0.5 rounded text-[10px] font-mono font-bold">Sem. {plan.semester}</span>
-                        <span className="text-slate-500 text-xs font-medium truncate max-w-[150px] sm:max-w-xs">• {plan.subject}</span>
+                        <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-bold truncate max-w-[150px] sm:max-w-xs border border-indigo-200/50">{plan.subject}</span>
                         {plan.materialFile && (
                           <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-0.5" title="Materi File">
                             <Paperclip size={10} /> File

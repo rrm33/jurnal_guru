@@ -30,7 +30,8 @@ import {
   DisciplineLog, 
   TeacherProfile,
   AttendanceStatus,
-  UserAccount
+  UserAccount,
+  ExamGradesData
 } from "./types";
 
 // Data & Helpers
@@ -113,14 +114,32 @@ export default function App() {
   );
   
   // Custom states: Midterm & Final Exams state
-  const [examGrades, setExamGrades] = useState<{ [studentId: string]: { uts: number; uas: number } }>(() => {
+  const [examGrades, setExamGrades] = useState<ExamGradesData>(() => {
     // default exams to 80 for realistic presentation
-    const defaultExams: { [studentId: string]: { uts: number; uas: number } } = {};
+    const defaultExams: ExamGradesData = {};
     INITIAL_STUDENTS.forEach(std => {
-      defaultExams[std.id] = { uts: 80, uas: 82 };
+      defaultExams[std.id] = {
+        "Pemrograman Mobile": { uts: 80, uas: 82 },
+        "Rekayasa Perangkat Lunak": { uts: 80, uas: 82 }
+      };
     });
     return loadData("exam_grades", defaultExams);
   });
+
+  // --- SUBJECTS DATABASE STATE ---
+  const [subjects, setSubjects] = useState<string[]>(() => {
+    const saved = localStorage.getItem("rpl_subjects");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("rpl_subjects", JSON.stringify(subjects));
+  }, [subjects]);
 
   // --- SAVE HOOKS / EVENTS ---
   useEffect(() => { saveData("teacher_profile", teacherProfile); }, [teacherProfile]);
@@ -601,12 +620,15 @@ export default function App() {
   };
 
   // Exams
-  const handleSaveExamGrades = (studentId: string, uts: number, uas: number) => {
+  const handleSaveExamGrades = (studentId: string, subject: string, uts: number, uas: number) => {
     setExamGrades(prev => ({
       ...prev,
-      [studentId]: { uts, uas }
+      [studentId]: {
+        ...(prev[studentId] || {}),
+        [subject]: { uts, uas }
+      }
     }));
-    saveItemToApi("exam-grades", { studentId, uts, uas });
+    saveItemToApi("exam-grades", { studentId, subject, uts, uas });
   };
 
   // Student Development
@@ -946,6 +968,7 @@ export default function App() {
                   attendance={attendance}
                   submissions={submissions}
                   disciplineLogs={disciplineLogs}
+                  subjects={subjects}
                 />
               )}
 
@@ -956,6 +979,7 @@ export default function App() {
                   onUpdatePlan={handleUpdatePlan}
                   onDeletePlan={handleDeletePlan}
                   classes={classes}
+                  subjects={subjects}
                   onRecordAttendance={handleRecordAttendanceFromRPP}
                   onOpenGrading={handleOpenGradingFromRPP}
                 />
@@ -967,6 +991,7 @@ export default function App() {
                   attendance={attendance}
                   onSaveAttendance={handleSaveAttendance}
                   classes={classes}
+                  subjects={subjects}
                   lessonPlans={lessonPlans}
                   initialLessonPlanId={initialLessonPlanId}
                   onClearInitialLessonPlanId={() => setInitialLessonPlanId("")}
@@ -999,6 +1024,7 @@ export default function App() {
                   onAddDevLog={handleAddDevLog}
                   onDeleteDevLog={handleDeleteDevLog}
                   classes={classes}
+                  subjects={subjects}
                   initialProgressClass={initialProgressClass}
                   initialProgressTaskId={initialProgressTaskId}
                   onClearInitialProgress={() => {
@@ -1028,6 +1054,7 @@ export default function App() {
                   examGrades={examGrades}
                   onSaveExamGrades={handleSaveExamGrades}
                   classes={classes}
+                  subjects={subjects}
                   onSelectStudentPhoto={(student) => setSelectedPhotoStudent(student)}
                 />
               )}

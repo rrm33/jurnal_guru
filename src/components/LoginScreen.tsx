@@ -83,7 +83,10 @@ export default function LoginScreen({ students, onLoginSuccess }: LoginScreenPro
   };
 
   // Filter students who haven't changed their password yet
-  const unconfiguredStudents = students.filter(s => !s.hasChangedPassword);
+  const [studentSearch, setStudentSearch] = useState("");
+  const unconfiguredStudents = students.filter(s => 
+    !s.hasChangedPassword && s.name.toLowerCase().includes(studentSearch.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-text flex items-center justify-center p-4 sm:p-6 font-sans">
@@ -243,15 +246,23 @@ export default function LoginScreen({ students, onLoginSuccess }: LoginScreenPro
               </form>
 
               {/* Unconfigured Students Selection (Akses Pertama) */}
-              <div className="border-t border-natural-border pt-4 space-y-2">
+              <div className="border-t border-natural-border pt-4 space-y-3">
                 <div className="text-center space-y-0.5">
                   <p className="text-[11px] font-bold text-natural-dark">
-                    Siswa Baru / Belum Ganti Password ({unconfiguredStudents.length})
+                    Siswa Baru / Belum Ganti Password ({students.filter(s => !s.hasChangedPassword).length})
                   </p>
                   <p className="text-[10px] text-slate-400">
                     Klik nama Anda di bawah ini untuk masuk pertama kali & ganti kata sandi.
                   </p>
                 </div>
+
+                <input
+                  type="text"
+                  placeholder="Cari nama Anda di sini..."
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className="w-full bg-[#FBFBFA] border border-natural-border rounded-xl px-4 py-2 text-xs font-medium focus:outline-none focus:border-natural-sage"
+                />
 
                 {unconfiguredStudents.length > 0 ? (
                   <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">

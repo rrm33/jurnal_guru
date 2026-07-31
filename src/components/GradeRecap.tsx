@@ -7,9 +7,10 @@ interface GradeRecapProps {
   tasks: Task[];
   submissions: TaskSubmission[];
   disciplineLogs: DisciplineLog[];
-  examGrades: { [studentId: string]: { uts: number; uas: number } };
-  onSaveExamGrades: (studentId: string, uts: number, uas: number) => void;
+  examGrades: ExamGradesData;
+  onSaveExamGrades: (studentId: string, subject: string, uts: number, uas: number) => void;
   classes: string[];
+  subjects?: string[];
   onSelectStudentPhoto?: (student: Student) => void;
 }
 
@@ -21,9 +22,11 @@ export default function GradeRecap({
   examGrades,
   onSaveExamGrades,
   classes,
+  subjects,
   onSelectStudentPhoto
 }: GradeRecapProps) {
   const [selectedClass, setSelectedClass] = useState<string>(classes[0] || "XI RPL 1");
+  const [selectedSubject, setSelectedSubject] = useState<string>(subjects?.[0] || "Mata Pelajaran");
   const [searchTerm, setSearchTerm] = useState("");
   const [kkm, setKkm] = useState(75);
 
@@ -46,7 +49,7 @@ export default function GradeRecap({
   };
 
   const handleSaveExams = (stdId: string) => {
-    onSaveExamGrades(stdId, localUts, localUas);
+    onSaveExamGrades(stdId, selectedSubject, localUts, localUas);
     setEditingExamId(null);
   };
 
@@ -64,7 +67,7 @@ export default function GradeRecap({
     return map;
   }, [students, disciplineLogs]);
 
-  // 2. Calculate Task Averages per student
+  // 2. Calculate Task Averages per student (filtered by subject)
   const taskAveragesMap = useMemo(() => {
     const map: { [studentId: string]: { total: number; count: number } } = {};
     
@@ -73,8 +76,13 @@ export default function GradeRecap({
       map[s.id] = { total: 0, count: 0 };
     });
 
+    // Create a set of Task IDs that belong to the selected subject
+    const subjectTaskIds = new Set(tasks.filter(t => t.subject === selectedSubject).map(t => t.id));
+
     // Accumulate graded and waiting submissions
     submissions.forEach(sub => {
+      if (!subjectTaskIds.has(sub.taskId)) return;
+      
       if (sub.status === "Selesai" || sub.status === "Menunggu Penilaian") {
         if (map[sub.studentId]) {
           const gradeToApply = (sub.status === "Selesai" && sub.grade !== undefined) ? sub.grade : 0;
@@ -92,7 +100,7 @@ export default function GradeRecap({
     });
 
     return averages;
-  }, [students, submissions]);
+  }, [students, submissions, tasks, selectedSubject]);
 
   // 3. Compile full grid data
   const classLedger = useMemo(() => {
@@ -102,7 +110,7 @@ export default function GradeRecap({
         const avgTasks = taskAveragesMap[student.id] || 0;
         const attitudeScore = attitudeScoresMap[student.id] ?? 100;
         
-        const exams = examGrades[student.id] || { uts: 80, uas: 80 }; // Default exams to 80 if not defined
+        const exams = examGrades[student.id]?.[selectedSubject] || { uts: 80, uas: 80 }; // Default exams to 80 if not defined
         const uts = exams.uts;
         const uas = exams.uas;
 
@@ -132,7 +140,7 @@ export default function GradeRecap({
       (item.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
       (item.nisn || "").includes(searchTerm)
     );
-  }, [students, selectedClass, taskAveragesMap, attitudeScoresMap, examGrades, wTasks, wAttitude, wUts, wUas, kkm, searchTerm]);
+  }, [students, selectedClass, taskAveragesMap, attitudeScoresMap, examGrades, wTasks, wAttitude, wUts, wUas, kkm, searchTerm, selectedSubject]);
 
   // Summary Metrics
   const classStats = useMemo(() => {
@@ -206,6 +214,18 @@ export default function GradeRecap({
             className="bg-natural-accent border border-natural-border text-natural-dark text-xs font-semibold rounded-xl px-3.5 py-2 focus:outline-none focus:ring-1 focus:ring-natural-sage cursor-pointer"
           >
             {classes.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          {/* Subject selection */}
+          <select
+            value={selectedSubject}
+            onChange={(e) => {
+              setSelectedSubject(e.target.value);
+              setEditingExamId(null);
+            }}
+            className="bg-natural-accent border border-natural-border text-natural-dark text-xs font-semibold rounded-xl px-3.5 py-2 focus:outline-none focus:ring-1 focus:ring-natural-sage cursor-pointer"
+          >
+            {subjects?.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
 
           {/* Settings Trigger */}

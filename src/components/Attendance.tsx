@@ -8,10 +8,12 @@ interface AttendanceProps {
   onSaveAttendance: (
     className: string, 
     date: string, 
+    subject: string,
     records: { studentId: string; status: AttendanceStatus; notes: string }[],
     lessonPlanId?: string
   ) => void;
   classes: string[];
+  subjects?: string[];
   lessonPlans: LessonPlan[];
   initialLessonPlanId?: string;
   onClearInitialLessonPlanId?: () => void;
@@ -23,12 +25,14 @@ export default function AttendanceTracker({
   attendance,
   onSaveAttendance,
   classes,
+  subjects,
   lessonPlans,
   initialLessonPlanId,
   onClearInitialLessonPlanId,
   onSelectStudentPhoto
 }: AttendanceProps) {
   const [selectedClass, setSelectedClass] = useState<string>(classes[0] || "XI RPL 1");
+  const [selectedSubject, setSelectedSubject] = useState<string>(subjects?.[0] || "Mata Pelajaran");
   // Set date default to today (YYYY-MM-DD)
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
@@ -56,7 +60,7 @@ export default function AttendanceTracker({
     return students.filter(s => s.className === selectedClass);
   }, [students, selectedClass]);
 
-  // Find existing attendance records for this class & date, or specific RPP
+  // Find existing attendance records for this class, date, & subject or specific RPP
   const existingRecordsMap = useMemo(() => {
     const map: { [studentId: string]: Attendance } = {};
     attendance.forEach(att => {
@@ -65,13 +69,13 @@ export default function AttendanceTracker({
           map[att.studentId] = att;
         }
       } else {
-        if (att.className === selectedClass && att.date === selectedDate && !att.lessonPlanId) {
+        if (att.className === selectedClass && att.date === selectedDate && att.subject === selectedSubject && !att.lessonPlanId) {
           map[att.studentId] = att;
         }
       }
     });
     return map;
-  }, [attendance, selectedClass, selectedDate, selectedLessonPlanId]);
+  }, [attendance, selectedClass, selectedDate, selectedSubject, selectedLessonPlanId]);
 
   // Local editing state for student statuses and notes
   const [localRecords, setLocalRecords] = useState<any>({});
@@ -128,6 +132,7 @@ export default function AttendanceTracker({
       ...prev,
       _metaClass: selectedClass,
       _metaDate: selectedDate,
+      _metaSubject: selectedSubject,
       _metaLessonPlanId: selectedLessonPlanId,
       [studentId]: {
         status,
@@ -171,7 +176,7 @@ export default function AttendanceTracker({
       };
     });
 
-    onSaveAttendance(selectedClass, selectedDate, payload, selectedLessonPlanId || undefined);
+    onSaveAttendance(selectedClass, selectedDate, selectedSubject, payload, selectedLessonPlanId || undefined);
     
     const label = selectedLessonPlanId 
       ? `pertemuan RPP "${lessonPlans.find(p => p.id === selectedLessonPlanId)?.topic}"` 
@@ -227,6 +232,21 @@ export default function AttendanceTracker({
                 className="bg-natural-accent border border-natural-border text-natural-dark text-xs font-semibold rounded-xl px-3.5 py-2 focus:outline-none focus:ring-1 focus:ring-natural-sage cursor-pointer"
               >
                 {classes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {/* Subject select */}
+            <div className="space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Mata Pelajaran</span>
+              <select
+                value={selectedSubject}
+                onChange={(e) => {
+                  setSelectedSubject(e.target.value);
+                  setLocalRecords({}); // clear unsaved modifications on subject change
+                }}
+                className="bg-natural-accent border border-natural-border text-natural-dark text-xs font-semibold rounded-xl px-3.5 py-2 focus:outline-none focus:ring-1 focus:ring-natural-sage cursor-pointer"
+              >
+                {subjects?.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
 
