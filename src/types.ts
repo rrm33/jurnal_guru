@@ -12,6 +12,7 @@ export interface Student {
   className: string;
   gender: "L" | "P";
   photoUrl?: string;
+  whatsapp?: string;
   password?: string;
   hasChangedPassword?: boolean;
 }

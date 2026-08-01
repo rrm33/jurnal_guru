@@ -72,6 +72,7 @@ export default function StudentManagement({
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [name, setName] = useState("");
   const [nisn, setNisn] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [className, setClassName] = useState(classes[0] || "XI RPL 1");
   const [gender, setGender] = useState<"L" | "P">("L");
   const [photoUrl, setPhotoUrl] = useState<string>("");
@@ -102,6 +103,7 @@ export default function StudentManagement({
     setEditingStudent(null);
     setName("");
     setNisn("");
+    setWhatsapp("");
     setClassName(classes[0] || "XI RPL 1");
     setGender("L");
     setPhotoUrl("");
@@ -113,6 +115,7 @@ export default function StudentManagement({
     setEditingStudent(student);
     setName(student.name);
     setNisn(student.nisn);
+    setWhatsapp(student.whatsapp || "");
     setClassName(student.className);
     setGender(student.gender);
     setPhotoUrl(student.photoUrl || "");
@@ -193,6 +196,7 @@ export default function StudentManagement({
       nisn: nisn.trim(),
       className,
       gender,
+      whatsapp: whatsapp.trim() || undefined,
       photoUrl: photoUrl || editingStudent?.photoUrl
     };
 
@@ -210,8 +214,8 @@ export default function StudentManagement({
   // Download Excel Template Helper
   const downloadTemplate = () => {
     const templateData = [
-      { "Nama Lengkap": "Ahmad Dani", "NISN": "0081234567", "Kelas": "XI RPL 1", "Gender (L/P)": "L" },
-      { "Nama Lengkap": "Siti Sarah", "NISN": "0087654321", "Kelas": "XI RPL 2", "Gender (L/P)": "P" }
+      { "Nama Lengkap": "Ahmad Dani", "NISN": "0081234567", "No. WhatsApp": "081234567890", "Kelas": "XI RPL 1", "Gender (L/P)": "L" },
+      { "Nama Lengkap": "Siti Sarah", "NISN": "0087654321", "No. WhatsApp": "081234567891", "Kelas": "XI RPL 2", "Gender (L/P)": "P" }
     ];
     
     const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -252,6 +256,7 @@ export default function StudentManagement({
           // Normalize row key mappings
           const rawName = row["Nama Lengkap"] || row["Nama"] || row["name"] || row["Nama Siswa"];
           const rawNisn = String(row["NISN"] || row["nisn"] || row["Nomor Induk"] || "").trim();
+          const rawWhatsapp = String(row["No. WhatsApp"] || row["whatsapp"] || row["No WA"] || row["WhatsApp"] || "").trim();
           const rawClass = String(row["Kelas"] || row["kelas"] || row["className"] || "").trim();
           const rawGender = String(row["Gender (L/P)"] || row["Gender"] || row["L/P"] || row["gender"] || "L").toUpperCase().trim();
 
@@ -274,6 +279,7 @@ export default function StudentManagement({
             id: `std_${Date.now()}_${index}`,
             name: rawName,
             nisn: rawNisn,
+            whatsapp: rawWhatsapp || undefined,
             className: rawClass,
             gender: genderNorm
           });
@@ -464,6 +470,7 @@ export default function StudentManagement({
             <ul className="space-y-1 list-disc list-inside text-slate-500 font-medium">
               <li><strong className="text-natural-dark">Nama Lengkap</strong> (cth: Ahmad Dani)</li>
               <li><strong className="text-natural-dark">NISN</strong> (10 digit angka unik)</li>
+              <li><strong className="text-natural-dark">No. WhatsApp</strong> (Opsional, diawali 08...)</li>
               <li><strong className="text-natural-dark">Kelas</strong> (cth: XI RPL 1)</li>
               <li><strong className="text-natural-dark">Gender (L/P)</strong> (L untuk Laki, P untuk Perempuan)</li>
             </ul>
@@ -514,9 +521,10 @@ export default function StudentManagement({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-natural-accent/40 border-b border-natural-border text-natural-dark font-bold text-xs uppercase tracking-wider">
-                <th className="py-3 px-4.5">No</th>
+                <th className="py-3 px-4.5 w-10 text-center">No</th>
                 <th className="py-3 px-4.5">Nama Siswa</th>
                 <th className="py-3 px-4.5">NISN</th>
+                <th className="py-3 px-4.5">No. WA</th>
                 <th className="py-3 px-4.5">Kelas</th>
                 <th className="py-3 px-4.5">L/P</th>
                 <th className="py-3 px-4.5 text-center">Aksi</th>
@@ -526,7 +534,7 @@ export default function StudentManagement({
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student, idx) => (
                   <tr key={student.id} className="hover:bg-[#FBFBFA]/40 transition-colors">
-                    <td className="py-3 px-4.5 text-slate-400 font-mono">{idx + 1}</td>
+                    <td className="py-3 px-4.5 text-slate-400 font-mono text-center">{idx + 1}</td>
                     <td className="py-3 px-4.5">
                       <div className="flex items-center gap-2.5">
                         <button
@@ -550,6 +558,13 @@ export default function StudentManagement({
                       </div>
                     </td>
                     <td className="py-3 px-4.5 font-mono text-slate-500">{student.nisn}</td>
+                    <td className="py-3 px-4.5 text-slate-500">
+                      {student.whatsapp ? (
+                        <a href={`https://wa.me/${student.whatsapp.replace(/^0/, '62')}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 hover:underline">
+                          <span className="font-mono text-xs">{student.whatsapp}</span>
+                        </a>
+                      ) : "-"}
+                    </td>
                     <td className="py-3 px-4.5">
                       <span className="bg-[#E8EDDF] text-natural-dark px-2 py-0.5 rounded text-[10px] font-mono font-bold">
                         {student.className}
@@ -1029,6 +1044,18 @@ export default function StudentManagement({
                   onChange={(e) => setNisn(e.target.value)}
                   className="w-full bg-white border border-natural-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-natural-sage font-mono"
                   required
+                />
+              </div>
+
+              {/* WhatsApp */}
+              <div className="space-y-1">
+                <label className="text-slate-600 font-bold text-xs block">No. WhatsApp (Opsional)</label>
+                <input
+                  type="text"
+                  placeholder="cth: 081234567890"
+                  className="w-full bg-white border border-natural-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-natural-sage font-mono"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
                 />
               </div>
 

@@ -610,12 +610,17 @@ async function startServer() {
           className VARCHAR(100) NOT NULL,
           gender ENUM('L', 'P') NOT NULL,
           photoUrl LONGTEXT NULL,
+          whatsapp VARCHAR(20) NULL,
           password TEXT NULL,
           hasChangedPassword TINYINT(1) DEFAULT 0
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
       try {
         await pool2.query("ALTER TABLE students ADD COLUMN photoUrl LONGTEXT NULL");
+      } catch (e) {
+      }
+      try {
+        await pool2.query("ALTER TABLE students ADD COLUMN whatsapp VARCHAR(20) NULL");
       } catch (e) {
       }
       try {
@@ -877,7 +882,7 @@ async function startServer() {
     const pool2 = getDbPool();
     if (pool2) {
       try {
-        const [rows] = await pool2.query("SELECT id, name, nisn, className, gender, photoUrl, password, hasChangedPassword FROM students");
+        const [rows] = await pool2.query("SELECT id, name, nisn, className, gender, photoUrl, whatsapp, password, hasChangedPassword FROM students");
         if (rows && rows.length > 0) {
           const formatted = rows.map((r) => ({
             ...r,
@@ -906,10 +911,10 @@ async function startServer() {
       for (const student of items) {
         if (student && student.id) {
           try {
-            const { id, name, nisn, className, gender, photoUrl, password, hasChangedPassword } = student;
+            const { id, name, nisn, className, gender, photoUrl, whatsapp, password, hasChangedPassword } = student;
             await pool2.query(
-              "REPLACE INTO students (id, name, nisn, className, gender, photoUrl, password, hasChangedPassword) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-              [id, name, nisn, className, gender, photoUrl || null, password || null, hasChangedPassword ? 1 : 0]
+              "REPLACE INTO students (id, name, nisn, className, gender, photoUrl, whatsapp, password, hasChangedPassword) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [id, name, nisn, className, gender, photoUrl || null, whatsapp || null, password || null, hasChangedPassword ? 1 : 0]
             );
           } catch (err) {
           }
