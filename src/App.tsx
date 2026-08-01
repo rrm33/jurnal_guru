@@ -47,7 +47,8 @@ import {
   INITIAL_DISCIPLINE_LOGS,
   INITIAL_USER_ACCOUNTS,
   loadData,
-  saveData
+  saveData,
+  safeString
 } from "./data";
 import { fetchFromApiOrLocal, saveItemToApi, deleteItemFromApi } from "./lib/apiClient";
 
@@ -199,18 +200,6 @@ export default function App() {
 
   const handleDeleteUser = (userId: string) => {
     setUsers(prev => prev.filter(u => u.id !== userId));
-  };
-
-  const safeString = (val: any): string => {
-    if (typeof val === 'string') return val;
-    if (!val) return "";
-    if (typeof val === 'object') {
-      if (val.type === 'Buffer' && Array.isArray(val.data)) return String.fromCharCode(...val.data);
-      if (val[0] !== undefined && typeof val[0] === 'string') return Object.values(val).join('');
-      if (val.name) return val.name;
-      return JSON.stringify(val);
-    }
-    return String(val);
   };
 
   // --- INITIAL & PERIODIC BACKEND SYNC (MULTI-DEVICE) ---

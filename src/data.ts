@@ -409,11 +409,45 @@ export const INITIAL_USER_ACCOUNTS: UserAccount[] = [
   }
 ];
 
+// Helper to prevent React Error #31 from corrupted string objects (Buffer/Uint8Array/String objects)
+export const safeString = (val: any): string => {
+  if (typeof val === 'string') return val;
+  if (!val) return "";
+  if (typeof val === 'object') {
+    if (val.type === 'Buffer' && Array.isArray(val.data)) return String.fromCharCode(...val.data);
+    if (val[0] !== undefined) {
+      if (typeof val[0] === 'number') return String.fromCharCode(...(Object.values(val) as number[]));
+      if (typeof val[0] === 'string') return Object.values(val).join('');
+    }
+    if (val.name) return val.name;
+    return JSON.stringify(val);
+  }
+  return String(val);
+};
+
 // LocalStorage helpers to allow state persistence across reloads
 export const loadData = <T>(key: string, defaultValue: T): T => {
   try {
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : defaultValue;
+    if (!saved) return defaultValue;
+    const parsed = JSON.parse(saved);
+
+    // Sanitize specifically known strings in arrays and objects to prevent React Error #31
+    if (Array.isArray(parsed)) {
+      if (key === "rpl_subjects" || key === "rpl_classes") {
+        return parsed.map(safeString) as unknown as T;
+      }
+      // Objects that have className or subject
+      return parsed.map((item: any) => {
+        if (!item || typeof item !== 'object') return item;
+        let copy = { ...item };
+        if (copy.className) copy.className = safeString(copy.className);
+        if (copy.subject) copy.subject = safeString(copy.subject);
+        return copy;
+      }) as unknown as T;
+    }
+    
+    return parsed;
   } catch (e) {
     console.error("Error loading data from localStorage for key: " + key, e);
     return defaultValue;
