@@ -505,6 +505,16 @@ export default function App() {
     saveItemToApi("lesson-plans", updatedPlan);
   };
   const handleDeletePlan = (id: string) => {
+    // Validasi: RPP tidak bisa dihapus jika ada tugas yang sudah dikumpulkan oleh minimal 1 siswa
+    const taskForPlan = tasks.find(t => t.lessonPlanId === id);
+    if (taskForPlan) {
+      const hasSubmissions = submissions.some(s => s.taskId === taskForPlan.id && s.status !== "Belum Mengumpulkan");
+      if (hasSubmissions) {
+        alert("Gagal menghapus! RPP ini memiliki tugas yang sudah dikerjakan/dikumpulkan oleh setidaknya satu siswa.");
+        return;
+      }
+    }
+
     setLessonPlans(prev => prev.filter(p => p.id !== id));
     deleteItemFromApi("lesson-plans", id);
   };
