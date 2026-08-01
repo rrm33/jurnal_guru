@@ -210,25 +210,25 @@ export default function App() {
         if (profile) setTeacherProfile(prev => JSON.stringify(prev) === JSON.stringify(profile) ? prev : profile);
 
         const subjs = await fetchFromApiOrLocal("subjects", "rpl_subjects", ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"]);
-        if (subjs && subjs.length > 0) {
+        if (subjs) {
           const sanitized = subjs.map(safeString);
           setSubjects(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
         }
 
         const cls = await fetchFromApiOrLocal("classes", "rpl_classes", ["XI RPL 1", "XI RPL 2"]);
-        if (cls && cls.length > 0) {
+        if (cls) {
           const sanitized = cls.map(safeString);
           setClasses(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
         }
 
         const stds = await fetchFromApiOrLocal("students", "students", INITIAL_STUDENTS);
-        if (stds && stds.length > 0) {
+        if (stds) {
           const sanitized = stds.map((s: any) => ({ ...s, className: safeString(s.className) }));
           setStudents(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
         }
 
         let lps = await fetchFromApiOrLocal("lesson-plans", "lesson_plans", INITIAL_LESSON_PLANS);
-        if (lps && lps.length > 0) {
+        if (lps) {
           // --- LEGACY DATA MIGRATION & SANITIZATION ---
           lps = lps.map((p: any) => ({ ...p, subject: safeString(p.subject), className: safeString(p.className) }));
           lps = lps.map((p: any) => p.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...p, subject: "Pemrograman Mobile" } : p);
@@ -236,7 +236,7 @@ export default function App() {
         }
 
         let att = await fetchFromApiOrLocal("attendance", "attendance", INITIAL_ATTENDANCE);
-        if (att && att.length > 0) {
+        if (att) {
           // --- LEGACY DATA MIGRATION & SANITIZATION ---
           att = att.map((a: any) => ({ ...a, subject: safeString(a.subject), className: safeString(a.className) }));
           att = att.map((a: any) => a.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...a, subject: "Pemrograman Mobile" } : a);
@@ -244,7 +244,7 @@ export default function App() {
         }
 
         const mats = await fetchFromApiOrLocal("materials", "materials", INITIAL_MATERIALS);
-        if (mats && mats.length > 0) {
+        if (mats) {
           const sanitized = mats.map((m: any) => ({ ...m, subject: safeString(m.subject), className: safeString(m.className) }));
           setMaterials(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
         }
@@ -255,22 +255,22 @@ export default function App() {
         // if (tsks && tsks.length > 0) setTasks(prev => JSON.stringify(prev) === JSON.stringify(tsks) ? prev : tsks);
 
         const subs = await fetchFromApiOrLocal("task-submissions", "task_submissions", INITIAL_TASK_SUBMISSIONS);
-        if (subs && subs.length > 0) {
+        if (subs) {
           // TaskSubmissions don't have subject/className but let's make sure it's an array
           setSubmissions(prev => JSON.stringify(prev) === JSON.stringify(subs) ? prev : subs);
         }
 
         const devLogs = await fetchFromApiOrLocal("development-progress", "development_logs", INITIAL_DEVELOPMENT_PROGRESS);
-        if (devLogs && devLogs.length > 0) {
+        if (devLogs) {
           const sanitized = devLogs.map((d: any) => ({ ...d, className: safeString(d.className) }));
           setDevelopmentLogs(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
         }
 
         const discLogs = await fetchFromApiOrLocal("discipline-logs", "discipline_logs", INITIAL_DISCIPLINE_LOGS);
-        if (discLogs && discLogs.length > 0) setDisciplineLogs(prev => JSON.stringify(prev) === JSON.stringify(discLogs) ? prev : discLogs);
+        if (discLogs) setDisciplineLogs(prev => JSON.stringify(prev) === JSON.stringify(discLogs) ? prev : discLogs);
 
         const exGrades = await fetchFromApiOrLocal("exam-grades", "exam_grades", {});
-        if (exGrades && Object.keys(exGrades).length > 0) setExamGrades(prev => JSON.stringify(prev) === JSON.stringify(exGrades) ? prev : exGrades);
+        if (exGrades) setExamGrades(prev => JSON.stringify(prev) === JSON.stringify(exGrades) ? prev : exGrades);
       } catch (err) {
         console.log("Using LocalStorage fallback mode");
       }

@@ -6,29 +6,19 @@ export async function fetchFromApiOrLocal<T>(endpoint: string, localKey: string,
     if (res.ok) {
       const data = await res.json();
       if (data !== null && data !== undefined) {
-        if (Array.isArray(data)) {
-          if (data.length > 0) {
-            saveData(localKey, data);
-            return data as T;
-          } else {
-            // Server has empty array, check if local storage has existing user data to push to server
-            const localData = loadData<T>(localKey, defaultValue);
-            if (Array.isArray(localData) && localData.length > 0) {
-              saveItemToApi(endpoint, localData); // Push local data to server
-              return localData;
-            }
-            return data as T;
-          }
-        } else {
-          saveData(localKey, data);
-          return data as T;
-        }
+        return data as T;
       }
     }
   } catch (err) {
-    console.warn(`[API] Could not fetch /api/${endpoint}, using localStorage:`, err);
+    console.warn(`[API] Could not fetch /api/${endpoint}, network error:`, err);
   }
-  return loadData(localKey, defaultValue);
+  
+  // Jika API mati, fallback ke defaultValue (tanpa baca localStorage)
+  // Kecuali untuk auth session yang masih kita izinkan pakai loadData
+  if (localKey === "app_auth_session" || localKey === "active_user_role") {
+    return loadData(localKey, defaultValue);
+  }
+  return defaultValue;
 }
 
 export async function saveItemToApi<T>(endpoint: string, item: T): Promise<boolean> {

@@ -427,62 +427,29 @@ export const safeString = (val: any): string => {
 
 // LocalStorage helpers to allow state persistence across reloads
 export const loadData = <T>(key: string, defaultValue: T): T => {
+  // Hanya simpan sesi login di localStorage. Buang cache data lokal lainnya (paksa pakai MySQL)
+  if (key !== "app_auth_session" && key !== "active_user_role") {
+    return defaultValue;
+  }
+
   try {
     const saved = localStorage.getItem(key);
     if (!saved) return defaultValue;
-    const parsed = JSON.parse(saved);
-
-    // Sanitize specifically known strings in arrays and objects to prevent React Error #31
-    if (Array.isArray(parsed)) {
-      if (key === "rpl_subjects" || key === "rpl_classes") {
-        return parsed.map(safeString) as unknown as T;
-      }
-      // Objects that have className or subject
-      return parsed.map((item: any) => {
-        if (!item || typeof item !== 'object') return item;
-        let copy = { ...item };
-        if (copy.className) copy.className = safeString(copy.className);
-        if (copy.subject) copy.subject = safeString(copy.subject);
-        return copy;
-      }) as unknown as T;
-    }
-    
-    return parsed;
+    return JSON.parse(saved);
   } catch (e) {
-    console.error("Error loading data from localStorage for key: " + key, e);
     return defaultValue;
   }
 };
 
 export const saveData = <T>(key: string, data: T): void => {
-  try {
-    let dataToSave = data;
-    
-    // Strip out huge base64 strings to prevent QuotaExceededError in localStorage
-    if (Array.isArray(data)) {
-      dataToSave = data.map((item: any) => {
-        if (!item) return item;
-        let copy = { ...item };
-        
-        if (copy.photoUrl && copy.photoUrl.startsWith("data:")) {
-          copy.photoUrl = undefined;
-        }
-        if (copy.materialFile && copy.materialFile.dataUrl && copy.materialFile.dataUrl.startsWith("data:")) {
-          copy = { ...copy, materialFile: { ...copy.materialFile, dataUrl: undefined } };
-        }
-        if (copy.file && copy.file.dataUrl && copy.file.dataUrl.startsWith("data:")) {
-          copy = { ...copy, file: { ...copy.file, dataUrl: undefined } };
-        }
-        if (copy.studentAnswerFile && copy.studentAnswerFile.dataUrl && copy.studentAnswerFile.dataUrl.startsWith("data:")) {
-          copy = { ...copy, studentAnswerFile: { ...copy.studentAnswerFile, dataUrl: undefined } };
-        }
-        
-        return copy;
-      }) as unknown as T;
-    }
+  // Hanya simpan sesi login di localStorage. Buang cache data lokal lainnya (paksa pakai MySQL)
+  if (key !== "app_auth_session" && key !== "active_user_role") {
+    return;
+  }
 
-    localStorage.setItem(key, JSON.stringify(dataToSave));
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
   } catch (e) {
-    console.warn("Warning: Could not save data to localStorage for key: " + key + " (Quota might be exceeded)");
+    console.warn("Warning: Could not save data to localStorage for key: " + key);
   }
 };
