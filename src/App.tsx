@@ -201,6 +201,18 @@ export default function App() {
     setUsers(prev => prev.filter(u => u.id !== userId));
   };
 
+  const safeString = (val: any): string => {
+    if (typeof val === 'string') return val;
+    if (!val) return "";
+    if (typeof val === 'object') {
+      if (val.type === 'Buffer' && Array.isArray(val.data)) return String.fromCharCode(...val.data);
+      if (val[0] !== undefined && typeof val[0] === 'string') return Object.values(val).join('');
+      if (val.name) return val.name;
+      return JSON.stringify(val);
+    }
+    return String(val);
+  };
+
   // --- INITIAL & PERIODIC BACKEND SYNC (MULTI-DEVICE) ---
   useEffect(() => {
     async function loadFromBackend() {
@@ -209,30 +221,44 @@ export default function App() {
         if (profile) setTeacherProfile(prev => JSON.stringify(prev) === JSON.stringify(profile) ? prev : profile);
 
         const subjs = await fetchFromApiOrLocal("subjects", "rpl_subjects", ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"]);
-        if (subjs && subjs.length > 0) setSubjects(prev => JSON.stringify(prev) === JSON.stringify(subjs) ? prev : subjs);
+        if (subjs && subjs.length > 0) {
+          const sanitized = subjs.map(safeString);
+          setSubjects(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
+        }
 
         const cls = await fetchFromApiOrLocal("classes", "rpl_classes", ["XI RPL 1", "XI RPL 2"]);
-        if (cls && cls.length > 0) setClasses(prev => JSON.stringify(prev) === JSON.stringify(cls) ? prev : cls);
+        if (cls && cls.length > 0) {
+          const sanitized = cls.map(safeString);
+          setClasses(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
+        }
 
         const stds = await fetchFromApiOrLocal("students", "students", INITIAL_STUDENTS);
-        if (stds && stds.length > 0) setStudents(prev => JSON.stringify(prev) === JSON.stringify(stds) ? prev : stds);
+        if (stds && stds.length > 0) {
+          const sanitized = stds.map((s: any) => ({ ...s, className: safeString(s.className) }));
+          setStudents(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
+        }
 
         let lps = await fetchFromApiOrLocal("lesson-plans", "lesson_plans", INITIAL_LESSON_PLANS);
         if (lps && lps.length > 0) {
-          // --- LEGACY DATA MIGRATION ---
-          lps = lps.map(p => p.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...p, subject: "Pemrograman Mobile" } : p);
+          // --- LEGACY DATA MIGRATION & SANITIZATION ---
+          lps = lps.map((p: any) => ({ ...p, subject: safeString(p.subject), className: safeString(p.className) }));
+          lps = lps.map((p: any) => p.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...p, subject: "Pemrograman Mobile" } : p);
           setLessonPlans(prev => JSON.stringify(prev) === JSON.stringify(lps) ? prev : lps);
         }
 
         let att = await fetchFromApiOrLocal("attendance", "attendance", INITIAL_ATTENDANCE);
         if (att && att.length > 0) {
-          // --- LEGACY DATA MIGRATION ---
-          att = att.map(a => a.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...a, subject: "Pemrograman Mobile" } : a);
+          // --- LEGACY DATA MIGRATION & SANITIZATION ---
+          att = att.map((a: any) => ({ ...a, subject: safeString(a.subject), className: safeString(a.className) }));
+          att = att.map((a: any) => a.subject === "Pemrograman Web & Perangkat Bergerak" ? { ...a, subject: "Pemrograman Mobile" } : a);
           setAttendance(prev => JSON.stringify(prev) === JSON.stringify(att) ? prev : att);
         }
 
         const mats = await fetchFromApiOrLocal("materials", "materials", INITIAL_MATERIALS);
-        if (mats && mats.length > 0) setMaterials(prev => JSON.stringify(prev) === JSON.stringify(mats) ? prev : mats);
+        if (mats && mats.length > 0) {
+          const sanitized = mats.map((m: any) => ({ ...m, subject: safeString(m.subject), className: safeString(m.className) }));
+          setMaterials(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
+        }
 
         // Tasks are completely auto-generated from LessonPlans. We do NOT fetch them from the backend
         // to prevent overwriting the generated tasks every 10 seconds.
@@ -240,10 +266,16 @@ export default function App() {
         // if (tsks && tsks.length > 0) setTasks(prev => JSON.stringify(prev) === JSON.stringify(tsks) ? prev : tsks);
 
         const subs = await fetchFromApiOrLocal("task-submissions", "task_submissions", INITIAL_TASK_SUBMISSIONS);
-        if (subs && subs.length > 0) setSubmissions(prev => JSON.stringify(prev) === JSON.stringify(subs) ? prev : subs);
+        if (subs && subs.length > 0) {
+          // TaskSubmissions don't have subject/className but let's make sure it's an array
+          setSubmissions(prev => JSON.stringify(prev) === JSON.stringify(subs) ? prev : subs);
+        }
 
         const devLogs = await fetchFromApiOrLocal("development-progress", "development_logs", INITIAL_DEVELOPMENT_PROGRESS);
-        if (devLogs && devLogs.length > 0) setDevelopmentLogs(prev => JSON.stringify(prev) === JSON.stringify(devLogs) ? prev : devLogs);
+        if (devLogs && devLogs.length > 0) {
+          const sanitized = devLogs.map((d: any) => ({ ...d, className: safeString(d.className) }));
+          setDevelopmentLogs(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
+        }
 
         const discLogs = await fetchFromApiOrLocal("discipline-logs", "discipline_logs", INITIAL_DISCIPLINE_LOGS);
         if (discLogs && discLogs.length > 0) setDisciplineLogs(prev => JSON.stringify(prev) === JSON.stringify(discLogs) ? prev : discLogs);
