@@ -37,7 +37,7 @@ export default function LessonPlans({
   };
 
   // Form states
-  const [week, setWeek] = useState<number>(1);
+  const [week, setWeek] = useState<number | "">(1);
   const [semester, setSemester] = useState<1 | 2>(1);
   const [subject, setSubject] = useState(subjects[0] || "Mata Pelajaran");
   const [className, setClassName] = useState(classes[0] || "XI RPL 1");
@@ -51,9 +51,10 @@ export default function LessonPlans({
   // Integrated Material & Task Form states
   const [materialText, setMaterialText] = useState("");
   const [materialFile, setMaterialFile] = useState<{ name: string; size: string; type: string; dataUrl: string } | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
-  const [taskMaxPoints, setTaskMaxPoints] = useState<number>(100);
+  const [taskMaxPoints, setTaskMaxPoints] = useState<number | "">(100);
   const [taskDeadline, setTaskDeadline] = useState("");
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
@@ -61,7 +62,7 @@ export default function LessonPlans({
     const matchClass = selectedClass === "Semua Kelas" || p.className === selectedClass;
     const matchSubject = selectedSubject === "Semua Mapel" || p.subject === selectedSubject;
     return matchClass && matchSubject;
-  }).sort((a, b) => a.week - b.week);
+  }).sort((a, b) => (typeof a.week === 'number' ? a.week : 0) - (typeof b.week === 'number' ? b.week : 0));
 
   const resetForm = () => {
     setWeek(lessonPlans.length + 1);
@@ -158,7 +159,7 @@ export default function LessonPlans({
     if (editingPlan) {
       const payload: LessonPlan = {
         id: editingPlan.id,
-        week,
+        week: typeof week === 'number' ? week : 1,
         semester,
         subject,
         className,
@@ -171,7 +172,7 @@ export default function LessonPlans({
         materialFile: materialFile || undefined,
         taskTitle: taskTitle || undefined,
         taskDescription: taskDescription || undefined,
-        taskMaxPoints: taskTitle ? taskMaxPoints : undefined,
+        taskMaxPoints: taskTitle ? (typeof taskMaxPoints === 'number' ? taskMaxPoints : 100) : undefined,
         taskDeadline: taskTitle ? taskDeadline : undefined
       };
       onUpdatePlan(payload);
@@ -186,7 +187,7 @@ export default function LessonPlans({
       selectedClassesForNew.forEach((cls, idx) => {
         const payload: LessonPlan = {
           id: `lp_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
-          week,
+          week: typeof week === 'number' ? week : 1,
           semester,
           subject,
           className: cls,
@@ -199,7 +200,7 @@ export default function LessonPlans({
           materialFile: materialFile || undefined,
           taskTitle: taskTitle || undefined,
           taskDescription: taskDescription || undefined,
-          taskMaxPoints: taskTitle ? taskMaxPoints : undefined,
+          taskMaxPoints: taskTitle ? (typeof taskMaxPoints === 'number' ? taskMaxPoints : 100) : undefined,
           taskDeadline: taskTitle ? taskDeadline : undefined
         };
         onAddPlan(payload);
@@ -301,8 +302,8 @@ export default function LessonPlans({
                 type="number"
                 min={1}
                 max={25}
-                value={week}
-                onChange={(e) => setWeek(parseInt(e.target.value) || 1)}
+                value={week === "" ? "" : week}
+                onChange={(e) => setWeek(e.target.value === "" ? "" : parseInt(e.target.value) || 1)}
                 className="w-full bg-white border border-natural-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-natural-sage"
                 required
               />
@@ -568,10 +569,10 @@ export default function LessonPlans({
                   <label className="text-slate-600 font-bold text-xs block">Poin Maksimal</label>
                   <input
                     type="number"
-                    min={1}
+                    min={10}
                     max={100}
-                    value={taskMaxPoints}
-                    onChange={(e) => setTaskMaxPoints(parseInt(e.target.value) || 100)}
+                    value={taskMaxPoints === "" ? "" : taskMaxPoints}
+                    onChange={(e) => setTaskMaxPoints(e.target.value === "" ? "" : parseInt(e.target.value) || 100)}
                     className="w-full bg-[#FBFBFA] border border-natural-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-natural-sage"
                   />
                 </div>
