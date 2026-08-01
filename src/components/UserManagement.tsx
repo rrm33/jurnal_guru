@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { 
   Users, 
   UserPlus, 
@@ -168,8 +167,8 @@ export default function UserManagement({
     setTimeout(() => setSuccessMsg(""), 3000);
   };
 
-  const handleDelete = async (user: UserAccount) => {
-    if (await swalConfirm(`Apakah Anda yakin ingin menghapus akun pengguna "${user.name}"?`)) {
+  const handleDelete = (user: UserAccount) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${user.name}"?`)) {
       onDeleteUser(user.id);
       setSuccessMsg(`Akun ${user.name} telah dihapus.`);
       setTimeout(() => setSuccessMsg(""), 3000);

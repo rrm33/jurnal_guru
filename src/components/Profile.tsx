@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { 
   User, 
   ShieldCheck, 
@@ -63,7 +62,7 @@ export default function Profile({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      swalAlert("Harap pilih file gambar (.jpg, .png, .webp).");
+      alert("Harap pilih file gambar (.jpg, .png, .webp).");
       return;
     }
 

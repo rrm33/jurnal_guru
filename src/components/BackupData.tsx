@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from "react";
-import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { Download, Upload, RotateCcw, HelpCircle, HardDrive, ShieldCheck, Database, CheckCircle2, XCircle, RefreshCw, Server } from "lucide-react";
 
 interface BackupDataProps {
@@ -99,12 +98,12 @@ export default function BackupData({
           const parsed = JSON.parse(result);
           if (parsed.students && parsed.lessonPlans && parsed.attendance) {
             onImport(result);
-            swalAlert("Database Jurnal Guru RPL berhasil diimpor!");
+            alert("Database Jurnal Guru RPL berhasil diimpor!");
           } else {
-            swalAlert("File backup tidak valid. Struktur data dalam file JSON tidak dikenali.");
+            alert("File backup tidak valid. Struktur data dalam file JSON tidak dikenali.");
           }
         } catch (err) {
-          swalAlert("Error membaca file JSON. Pastikan file tidak rusak.");
+          alert("Error membaca file JSON. Pastikan file tidak rusak.");
         }
       }
     };
@@ -290,10 +289,10 @@ export default function BackupData({
           </div>
           <button
             type="button"
-            onClick={async () => {
-              if (await swalConfirm("WARNING: Tindakan ini akan menghapus semua catatan presensi, materi, dan nilai tugas baru Anda secara permanen. Lanjutkan?")) {
+            onClick={() => {
+              if (confirm("WARNING: Tindakan ini akan menghapus semua catatan presensi, materi, dan nilai tugas baru Anda secara permanen. Lanjutkan?")) {
                 onReset();
-                swalAlert("Database berhasil dikembalikan ke template awal bawaan SMKN 6 Jember.");
+                alert("Database berhasil dikembalikan ke template awal bawaan SMKN 6 Jember.");
               }
             }}
             className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs py-2.5 rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"

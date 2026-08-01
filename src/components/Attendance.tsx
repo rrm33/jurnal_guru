@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { swalAlert, swalConfirm } from "../lib/swalUtils";
 import { Calendar, UserCheck, CheckCircle2, XCircle, AlertCircle, RefreshCw, HelpCircle, Link as LinkIcon } from "lucide-react";
 import { Student, Attendance, AttendanceStatus, LessonPlan } from "../types";
 
@@ -182,7 +181,7 @@ export default function AttendanceTracker({
     const label = selectedLessonPlanId 
       ? `pertemuan RPP "${lessonPlans.find(p => p.id === selectedLessonPlanId)?.topic}"` 
       : `tanggal ${selectedDate}`;
-    swalAlert(`Berhasil menyimpan presensi kelas ${selectedClass} untuk ${label}!`);
+    alert(`Berhasil menyimpan presensi kelas ${selectedClass} untuk ${label}!`);
   };
 
   // Stats for the currently viewed class + date + RPP
