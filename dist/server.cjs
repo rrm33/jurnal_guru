@@ -40,7 +40,7 @@ function getDbPool() {
   if (!rawHost || !dbName) {
     return null;
   }
-  const host = rawHost === "localhost" ? "127.0.0.1" : rawHost;
+  const host = rawHost;
   try {
     pool = import_promise.default.createPool({
       host,
@@ -75,7 +75,8 @@ function getDbPool() {
   }
 }
 async function testDbConnectionDetailed() {
-  const host = (process.env.DB_HOST === "localhost" ? "127.0.0.1" : process.env.DB_HOST) || "Belum diisi";
+  isMySqlUnreachable = false;
+  const host = process.env.DB_HOST || "Belum diisi";
   const database = process.env.DB_NAME || process.env.DB_DATABASE || "Belum diisi";
   const user = process.env.DB_USER || process.env.DB_USERNAME || "Belum diisi";
   if (!process.env.DB_HOST || !(process.env.DB_NAME || process.env.DB_DATABASE)) {
