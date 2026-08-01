@@ -422,12 +422,12 @@ export default function GradeRecap({
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <button
-                            onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(item.student)}
+                            onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(item)}
                             className="shrink-0 cursor-pointer group"
                             title="Klik untuk pratinjau foto siswa"
                           >
-                            {item.student.photoUrl ? (
-                              <img src={item.student.photoUrl} alt={item.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
+                            {item.photoUrl ? (
+                              <img src={item.photoUrl} alt={item.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
                                 {item.name.charAt(0)}
