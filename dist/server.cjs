@@ -31,16 +31,13 @@ var import_vite = require("vite");
 // src/db/mysql.ts
 var import_promise = __toESM(require("mysql2/promise"), 1);
 var pool = null;
-var isMySqlUnreachable = false;
 function getDbPool() {
-  if (isMySqlUnreachable) return null;
   if (pool) return pool;
-  const rawHost = process.env.DB_HOST;
+  const host = process.env.DB_HOST;
   const dbName = process.env.DB_NAME || process.env.DB_DATABASE;
-  if (!rawHost || !dbName) {
+  if (!host || !dbName) {
     return null;
   }
-  const host = rawHost;
   try {
     pool = import_promise.default.createPool({
       host,
@@ -51,34 +48,22 @@ function getDbPool() {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      connectTimeout: 1e3
+      connectTimeout: 5e3
+      // 5 seconds timeout
     });
-    const originalQuery = pool.query.bind(pool);
-    pool.query = async function(...args) {
-      if (isMySqlUnreachable) throw new Error("MySQL is offline");
-      try {
-        return await originalQuery(...args);
-      } catch (err) {
-        if (err.code === "ECONNREFUSED" || err.code === "ETIMEDOUT" || err.code === "ENOTFOUND" || err.fatal) {
-          isMySqlUnreachable = true;
-          console.warn("[MySQL] Terputus/Timeout. Beralih ke JSON secara permanen untuk menghemat waktu loading.");
-        }
-        throw err;
-      }
-    };
     console.log(`[MySQL] Connection pool created for database: ${dbName} at ${host}`);
     return pool;
   } catch (err) {
     console.error("[MySQL] Failed to create connection pool:", err);
-    isMySqlUnreachable = true;
     return null;
   }
 }
 async function testDbConnectionDetailed() {
-  isMySqlUnreachable = false;
   const host = process.env.DB_HOST || "Belum diisi";
   const database = process.env.DB_NAME || process.env.DB_DATABASE || "Belum diisi";
   const user = process.env.DB_USER || process.env.DB_USERNAME || "Belum diisi";
+  const password = process.env.DB_PASSWORD || "";
+  const port = Number(process.env.DB_PORT) || 3306;
   if (!process.env.DB_HOST || !(process.env.DB_NAME || process.env.DB_DATABASE)) {
     return {
       connected: false,
@@ -89,27 +74,28 @@ async function testDbConnectionDetailed() {
     };
   }
   try {
-    const activePool = getDbPool();
-    if (!activePool) {
-      return { connected: false, error: "Gagal membuat pool koneksi MySQL. Periksa variabel DB_HOST dan DB_NAME.", host, database, user };
-    }
-    const connection = await activePool.getConnection();
-    connection.release();
+    const connection = await import_promise.default.createConnection({
+      host: process.env.DB_HOST,
+      port,
+      user: process.env.DB_USER || process.env.DB_USERNAME || "root",
+      password,
+      database: process.env.DB_NAME || process.env.DB_DATABASE,
+      connectTimeout: 5e3
+    });
+    await connection.end();
+    getDbPool();
     return { connected: true, host, database, user };
   } catch (err) {
     console.info("[MySQL] Connection test note:", err.code || err.message || "Disconnected");
     let detailedError = `[${err.code || "UNKNOWN_ERROR"}] ${err.message || String(err)}`;
     if (err.code === "ECONNREFUSED") {
-      detailedError = `[ECONNREFUSED] Gagal terhubung ke MySQL server (${host}:${process.env.DB_PORT || 3306}). Service MySQL mungkin tidak berjalan atau tidak menerima koneksi dari host ini. Gunakan DB_HOST = 127.0.0.1. Detail: ${err.message}`;
+      detailedError = `[ECONNREFUSED] Gagal terhubung ke MySQL server (${host}:${port}). Service MySQL mungkin mati atau host salah (Coba ganti localhost/127.0.0.1). Detail: ${err.message}`;
     } else if (err.code === "ER_ACCESS_DENIED_ERROR") {
-      detailedError = `[ER_ACCESS_DENIED_ERROR] Akses ditolak untuk user '${user}'. Periksa DB_USER dan DB_PASSWORD pada cPanel. Detail: ${err.message}`;
+      detailedError = `[ER_ACCESS_DENIED_ERROR] Akses ditolak untuk user '${user}'. Periksa DB_PASSWORD dan DB_USER pada cPanel. Detail: ${err.message}`;
     } else if (err.code === "ER_BAD_DB_ERROR") {
-      detailedError = `[ER_BAD_DB_ERROR] Database '${database}' tidak ditemukan. Pastikan nama database di cPanel sudah sesuai (termasuk prefix username cPanel, contoh: 'username_jurnal'). Detail: ${err.message}`;
+      detailedError = `[ER_BAD_DB_ERROR] Database '${database}' tidak ditemukan. Pastikan nama database di cPanel sudah sesuai. Detail: ${err.message}`;
     } else if (err.code === "ENOTFOUND") {
       detailedError = `[ENOTFOUND] Host '${host}' tidak dapat ditemukan. Coba ganti DB_HOST menjadi '127.0.0.1' atau 'localhost'. Detail: ${err.message}`;
-    }
-    if (err.code === "ECONNREFUSED" || err.code === "ETIMEDOUT" || err.code === "ENOTFOUND") {
-      isMySqlUnreachable = true;
     }
     return { connected: false, error: detailedError, host, database, user };
   }
