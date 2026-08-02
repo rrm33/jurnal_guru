@@ -838,6 +838,7 @@ export default function App() {
     return (
       <LoginScreen 
         students={students} 
+        users={users}
         onLoginSuccess={handleLoginSuccess} 
       />
     );

@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { GraduationCap, User, Lock, AlertCircle, ChevronRight, LogIn, Sparkles, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
-import { Student } from "../types";
+import { Student, UserAccount } from "../types";
 
 interface LoginScreenProps {
   students: Student[];
+  users?: UserAccount[];
   onLoginSuccess: (role: "guru" | "siswa", studentData?: Student) => void;
 }
 
-export default function LoginScreen({ students, onLoginSuccess }: LoginScreenProps) {
+export default function LoginScreen({ students, users = [], onLoginSuccess }: LoginScreenProps) {
   const [activeRoleTab, setActiveRoleTab] = useState<"guru" | "siswa">("guru");
   
   // Teacher credentials state
@@ -33,11 +34,28 @@ export default function LoginScreen({ students, onLoginSuccess }: LoginScreenPro
       return;
     }
 
-    // Accepting default username "guru", NIP "19940823 202112 1 002", or any password for flexibility
-    if (username === "guru" || username.includes("19940823") || pass === "password" || pass === "guru123" || pass.length > 0) {
-      onLoginSuccess("guru");
+    // Periksa database UserAccounts khusus untuk role 'guru'
+    const teacherUsers = users.filter(u => u.role === "guru");
+    
+    if (teacherUsers.length > 0) {
+      // Jika sudah ada akun guru di database (UserManagement), gunakan itu sebagai validasi
+      const validUser = teacherUsers.find(
+        u => u.username === username || u.nip === username
+      );
+      
+      if (validUser && validUser.password === pass) {
+        onLoginSuccess("guru");
+        return;
+      }
+      setTeacherError("Username/NIP atau kata sandi tidak cocok dengan data pengguna.");
     } else {
-      setTeacherError("Kredensial tidak valid. Gunakan username 'guru' dan kata sandi 'password'.");
+      // BACKUP/FALLBACK: Jika tidak ada akun guru sama sekali di database, 
+      // gunakan kredensial bawaan "guru" / "password" sebagai pintu belakang pertama kali
+      if (username === "guru" || username.includes("19940823") || pass === "password" || pass === "guru123" || pass.length > 0) {
+        onLoginSuccess("guru");
+      } else {
+        setTeacherError("Kredensial tidak valid. Gunakan username 'guru' dan kata sandi 'password'.");
+      }
     }
   };
 
