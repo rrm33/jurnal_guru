@@ -198,14 +198,7 @@ export default function LoginScreen({ students, users = [], onLoginSuccess }: Lo
                 <span>Masuk sebagai Guru</span>
               </button>
 
-              <div className="bg-natural-bg p-3 rounded-xl border border-natural-border text-[11px] text-slate-500 space-y-1">
-                <p className="font-bold text-natural-dark flex items-center gap-1">
-                  <Sparkles size={13} className="text-amber-500" />
-                  Gunakan Akun Guru Pengujian:
-                </p>
-                <p className="font-mono">Username: <span className="font-bold text-natural-dark">guru</span></p>
-                <p className="font-mono">Password: <span className="font-bold text-natural-dark">password</span></p>
-              </div>
+
             </motion.form>
           )}
 
