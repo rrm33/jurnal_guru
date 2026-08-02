@@ -718,6 +718,15 @@ async function startServer() {
           name VARCHAR(255) PRIMARY KEY
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
+      await pool2.query(`
+        CREATE TABLE IF NOT EXISTS informasi (
+          id VARCHAR(100) PRIMARY KEY,
+          info TEXT,
+          isi LONGTEXT,
+          gambar LONGTEXT,
+          createdAt VARCHAR(100)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
       const [subjRows] = await pool2.query("SELECT COUNT(*) as count FROM subjects");
       if (subjRows[0].count === 0) {
         await pool2.query("INSERT INTO subjects (name) VALUES ('Pemrograman Mobile'), ('Rekayasa Perangkat Lunak')");
@@ -1287,6 +1296,63 @@ async function startServer() {
   });
   app.post("/api/user-accounts", (req, res) => {
     res.json({ success: true });
+  });
+  app.get("/api/informasi", async (req, res) => {
+    const pool2 = getDbPool();
+    if (pool2) {
+      try {
+        const [rows] = await pool2.query("SELECT * FROM informasi");
+        res.json(rows);
+      } catch (err) {
+        res.status(500).json({ error: "Gagal mengambil data informasi" });
+      }
+    } else {
+      res.json([]);
+    }
+  });
+  app.post("/api/informasi", async (req, res) => {
+    const pool2 = getDbPool();
+    if (pool2) {
+      const { id, info, isi, gambar, createdAt } = req.body;
+      try {
+        const [existing] = await pool2.query("SELECT id FROM informasi WHERE id = ?", [id]);
+        if (existing.length > 0) {
+          await pool2.query("UPDATE informasi SET info=?, isi=?, gambar=?, createdAt=? WHERE id=?", [
+            info,
+            isi,
+            gambar || null,
+            createdAt,
+            id
+          ]);
+        } else {
+          await pool2.query("INSERT INTO informasi (id, info, isi, gambar, createdAt) VALUES (?, ?, ?, ?, ?)", [
+            id,
+            info,
+            isi,
+            gambar || null,
+            createdAt
+          ]);
+        }
+        res.json({ success: true });
+      } catch (err) {
+        res.status(500).json({ error: "Gagal menyimpan data informasi" });
+      }
+    } else {
+      res.json({ success: false });
+    }
+  });
+  app.delete("/api/informasi/:id", async (req, res) => {
+    const pool2 = getDbPool();
+    if (pool2) {
+      try {
+        await pool2.query("DELETE FROM informasi WHERE id = ?", [req.params.id]);
+        res.json({ success: true });
+      } catch (err) {
+        res.status(500).json({ error: "Gagal menghapus informasi" });
+      }
+    } else {
+      res.json({ success: false });
+    }
   });
   app.post("/api/sync-all", (req, res) => {
     try {

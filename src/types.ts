@@ -159,3 +159,11 @@ export interface TeacherProfile {
   phone?: string;
   photoUrl?: string;
 }
+
+export interface Information {
+  id: string;
+  info: string; // Judul / Ringkasan info
+  isi: string;  // Detail isi informasi
+  gambar?: string; // photoUrl atau gambar pendukung (Base64 atau URL)
+  createdAt: string;
+}

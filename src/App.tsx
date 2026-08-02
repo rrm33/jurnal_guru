@@ -31,7 +31,8 @@ import {
   TeacherProfile,
   AttendanceStatus,
   UserAccount,
-  ExamGradesData
+  ExamGradesData,
+  Information
 } from "./types";
 
 // Data & Helpers
@@ -66,8 +67,9 @@ import LoginScreen from "./components/LoginScreen";
 import UserManagement from "./components/UserManagement";
 import PhotoModal from "./components/PhotoModal";
 import Profile from "./components/Profile";
+import InformationTab from "./components/Information";
 
-type TabID = "dashboard" | "rpp" | "attendance" | "students" | "progress" | "discipline" | "grades" | "users" | "profile" | "backup";
+type TabID = "dashboard" | "rpp" | "attendance" | "students" | "progress" | "discipline" | "grades" | "users" | "profile" | "backup" | "informasi";
 
 export default function App() {
   // --- AUTH SESSION STATE ---
@@ -112,6 +114,9 @@ export default function App() {
   );
   const [disciplineLogs, setDisciplineLogs] = useState<DisciplineLog[]>(() => 
     loadData("discipline_logs", INITIAL_DISCIPLINE_LOGS)
+  );
+  const [informations, setInformations] = useState<Information[]>(() => 
+    loadData("informations", [])
   );
   
   // Custom states: Midterm & Final Exams state
@@ -271,6 +276,9 @@ export default function App() {
 
         const exGrades = await fetchFromApiOrLocal("exam-grades", "exam_grades", {});
         if (exGrades) setExamGrades(prev => JSON.stringify(prev) === JSON.stringify(exGrades) ? prev : exGrades);
+
+        const infos = await fetchFromApiOrLocal("informasi", "informations", []);
+        if (infos) setInformations(prev => JSON.stringify(prev) === JSON.stringify(infos) ? prev : infos);
       } catch (err) {
         console.log("Using LocalStorage fallback mode");
       }
@@ -697,19 +705,50 @@ export default function App() {
       }
       return [...prev, updatedSub];
     });
-    saveItemToApi("task-submissions", updatedSub);
+saveItemToApi("task-submissions", updatedSub);
   };
 
   // Exams
   const handleSaveExamGrades = (studentId: string, subject: string, uts: number, uas: number) => {
-    setExamGrades(prev => ({
-      ...prev,
-      [studentId]: {
-        ...(prev[studentId] || {}),
-        [subject]: { uts, uas }
-      }
-    }));
-    saveItemToApi("exam-grades", { studentId, subject, uts, uas });
+    setExamGrades(prev => {
+      const currentStudentGrades = prev[studentId] || {};
+      const updated = {
+        ...prev,
+        [studentId]: {
+          ...currentStudentGrades,
+          [subject]: { uts, uas }
+        }
+      };
+      saveItemToApi("exam-grades", updated);
+      return updated;
+    });
+  };
+
+  const handleAddInformation = (info: Information) => {
+    setInformations(prev => {
+      const updated = [...prev, info];
+      saveData("informations", updated);
+      saveItemToApi("informasi", info);
+      return updated;
+    });
+  };
+
+  const handleUpdateInformation = (info: Information) => {
+    setInformations(prev => {
+      const updated = prev.map(i => i.id === info.id ? info : i);
+      saveData("informations", updated);
+      saveItemToApi("informasi", info);
+      return updated;
+    });
+  };
+
+  const handleDeleteInformation = (id: string) => {
+    setInformations(prev => {
+      const updated = prev.filter(i => i.id !== id);
+      saveData("informations", updated);
+      deleteItemFromApi("informasi", id);
+      return updated;
+    });
   };
 
   // Student Development
@@ -744,7 +783,8 @@ export default function App() {
       submissions,
       developmentLogs,
       disciplineLogs,
-      examGrades
+      examGrades,
+      informations
     };
     const jsonString = JSON.stringify(databaseDump, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -770,6 +810,7 @@ export default function App() {
       if (parsed.developmentLogs) setDevelopmentLogs(parsed.developmentLogs);
       if (parsed.disciplineLogs) setDisciplineLogs(parsed.disciplineLogs);
       if (parsed.examGrades) setExamGrades(parsed.examGrades);
+      if (parsed.informations) setInformations(parsed.informations);
 
       // Sync data snapshot to backend
       fetch("/api/sync-all", {
@@ -793,6 +834,7 @@ export default function App() {
     setSubmissions(INITIAL_TASK_SUBMISSIONS);
     setDevelopmentLogs(INITIAL_DEVELOPMENT_PROGRESS);
     setDisciplineLogs(INITIAL_DISCIPLINE_LOGS);
+    setInformations([]);
 
     const defaultExams: { [studentId: string]: { uts: number; uas: number } } = {};
     INITIAL_STUDENTS.forEach(std => {
@@ -814,7 +856,8 @@ export default function App() {
         taskSubmissions: INITIAL_TASK_SUBMISSIONS,
         developmentProgress: INITIAL_DEVELOPMENT_PROGRESS,
         disciplineLogs: INITIAL_DISCIPLINE_LOGS,
-        examGrades: defaultExams
+        examGrades: defaultExams,
+        informations: []
       })
     }).catch(() => {});
   };
@@ -822,6 +865,7 @@ export default function App() {
   // Sidebar Menu configuration
   const menuItems = [
     { id: "dashboard", label: "Dashboard Analitik", icon: LayoutDashboard },
+    { id: "informasi", label: "Informasi", icon: FileText },
     { id: "rpp", label: "Rencana Semester (RPP)", icon: BookOpen },
     { id: "attendance", label: "Presensi & Keizinan", icon: UserCheck },
     { id: "students", label: "Kelola Data Siswa", icon: Users },
@@ -872,6 +916,26 @@ export default function App() {
               <p className="text-[10px] text-natural-sage font-semibold tracking-wide font-mono">
                 SMKN 6 JEMBER • {isTeacher ? "MODE GURU" : "PORTAL SISWA"}
               </p>
+              <button
+                onClick={() => setActiveTab("informasi")}
+                className={`w-full flex items-center justify-between p-4 rounded-xl mb-4 transition-all border ${
+                  activeTab === "informasi"
+                    ? "bg-emerald-50 border-emerald-500 shadow-sm"
+                    : "bg-white border-natural-border hover:bg-natural-bg text-slate-500"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${activeTab === "informasi" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
+                    <FileText size={18} />
+                  </div>
+                  <div className="text-left">
+                    <p className={`text-sm font-bold ${activeTab === "informasi" ? "text-emerald-800" : "text-slate-600"}`}>
+                      Informasi Umum
+                    </p>
+                    <p className="text-[10px] text-slate-400">Pengumuman & berita</p>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -1170,6 +1234,16 @@ export default function App() {
                   onExport={handleExportData}
                   onImport={handleImportData}
                   onReset={handleResetData}
+                />
+              )}
+
+              {activeTab === "informasi" && (
+                <InformationTab 
+                  informations={informations}
+                  onAdd={handleAddInformation}
+                  onUpdate={handleUpdateInformation}
+                  onDelete={handleDeleteInformation}
+                  role={isTeacher ? "guru" : "siswa"}
                 />
               )}
             </motion.div>

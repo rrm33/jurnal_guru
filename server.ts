@@ -303,6 +303,16 @@ async function startServer() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS informasi (
+          id VARCHAR(100) PRIMARY KEY,
+          info TEXT,
+          isi LONGTEXT,
+          gambar LONGTEXT,
+          createdAt VARCHAR(100)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
       // Seed subjects and classes if empty
       const [subjRows]: any = await pool.query("SELECT COUNT(*) as count FROM subjects");
       if (subjRows[0].count === 0) {
@@ -921,6 +931,59 @@ async function startServer() {
 
   app.post("/api/user-accounts", (req, res) => {
     res.json({ success: true });
+  });
+
+  // --- INFORMASI ---
+  app.get("/api/informasi", async (req, res) => {
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        const [rows]: any = await pool.query("SELECT * FROM informasi");
+        res.json(rows);
+      } catch (err) {
+        res.status(500).json({ error: "Gagal mengambil data informasi" });
+      }
+    } else {
+      res.json([]);
+    }
+  });
+
+  app.post("/api/informasi", async (req, res) => {
+    const pool = getDbPool();
+    if (pool) {
+      const { id, info, isi, gambar, createdAt } = req.body;
+      try {
+        const [existing]: any = await pool.query("SELECT id FROM informasi WHERE id = ?", [id]);
+        if (existing.length > 0) {
+          await pool.query("UPDATE informasi SET info=?, isi=?, gambar=?, createdAt=? WHERE id=?", [
+            info, isi, gambar || null, createdAt, id
+          ]);
+        } else {
+          await pool.query("INSERT INTO informasi (id, info, isi, gambar, createdAt) VALUES (?, ?, ?, ?, ?)", [
+            id, info, isi, gambar || null, createdAt
+          ]);
+        }
+        res.json({ success: true });
+      } catch (err) {
+        res.status(500).json({ error: "Gagal menyimpan data informasi" });
+      }
+    } else {
+      res.json({ success: false });
+    }
+  });
+
+  app.delete("/api/informasi/:id", async (req, res) => {
+    const pool = getDbPool();
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM informasi WHERE id = ?", [req.params.id]);
+        res.json({ success: true });
+      } catch (err) {
+        res.status(500).json({ error: "Gagal menghapus informasi" });
+      }
+    } else {
+      res.json({ success: false });
+    }
   });
 
   // --- SYNC ALL DATA ENDPOINT ---
