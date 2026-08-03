@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { UserAccount, Student } from "../types";
+import Pagination from "./Pagination";
 
 interface UserManagementProps {
   users: UserAccount[];
@@ -37,6 +38,10 @@ export default function UserManagement({
 }: UserManagementProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<"semua" | "guru" | "siswa">("semua");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +72,15 @@ export default function UserManagement({
       return matchesSearch && matchesRole;
     });
   }, [users, searchTerm, roleFilter]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const currentData = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleOpenAdd = () => {
     setEditingUser(null);
@@ -269,8 +283,8 @@ export default function UserManagement({
               </tr>
             </thead>
             <tbody className="divide-y divide-natural-border/60 font-medium">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((u) => {
+              {currentData.length > 0 ? (
+                currentData.map((u) => {
                   const isGuru = u.role === "guru";
                   return (
                     <tr key={u.id} className="hover:bg-natural-bg/50 transition-colors">
@@ -336,6 +350,15 @@ export default function UserManagement({
             </tbody>
           </table>
         </div>
+        
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
 
       {/* Add / Edit User Modal */}

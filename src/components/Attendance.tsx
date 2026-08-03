@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Calendar, UserCheck, CheckCircle2, XCircle, AlertCircle, RefreshCw, HelpCircle, Link as LinkIcon } from "lucide-react";
 import { Student, Attendance, AttendanceStatus, LessonPlan } from "../types";
+import Pagination from "./Pagination";
 
 interface AttendanceProps {
   students: Student[];
@@ -80,6 +81,10 @@ export default function AttendanceTracker({
   // Local editing state for student statuses and notes
   const [localRecords, setLocalRecords] = useState<any>({});
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   // Sync / initialize local records when class, date, RPP or existing records change
   const currentRecords = useMemo(() => {
     const records: { [studentId: string]: { status: AttendanceStatus; notes: string } } = {};
@@ -110,6 +115,7 @@ export default function AttendanceTracker({
     setSelectedClass(newClass);
     setSelectedLessonPlanId(""); // clear selected lesson plan when class changes
     setLocalRecords({});
+    setCurrentPage(1); // reset page on class change
     if (onClearInitialLessonPlanId) {
       onClearInitialLessonPlanId();
     }
@@ -350,50 +356,57 @@ export default function AttendanceTracker({
         </div>
       </div>
 
-      {/* Student List Table */}
-      <div className="bg-white rounded-2xl border border-natural-border shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      {/* Pagination Logic */}
+      {(() => {
+        const totalPages = Math.ceil(classStudents.length / itemsPerPage);
+        const currentData = classStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+        return (
+          <>
+            {/* Student List Table */}
+            <div className="bg-white rounded-2xl border border-natural-border shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-natural-accent/60 border-b border-natural-border/70 text-natural-dark font-bold text-xs uppercase tracking-wider">
                 <th className="py-3 px-4.5">No</th>
                 <th className="py-3 px-4.5">Nama Siswa</th>
                 <th className="py-3 px-4.5">NISN / L/P</th>
                 <th className="py-3 px-4.5 text-center">Status Kehadiran</th>
-                <th className="py-3 px-4.5">Keterangan / Alasan</th>
+                <th className="py-3 px-4.5">Catatan Tambahan</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-natural-border/40">
-              {classStudents.length > 0 ? (
-                classStudents.map((student, idx) => {
-                  const record = currentRecords[student.id] || { status: AttendanceStatus.HADIR, notes: "" };
+            <tbody className="divide-y divide-natural-border/40 text-xs">
+              {currentData.length > 0 ? (
+                currentData.map((std, idx) => {
+                  const record = currentRecords[std.id] || { status: AttendanceStatus.HADIR, notes: "" };
                   return (
-                    <tr key={student.id} className="hover:bg-[#FBFBFA]/50 transition-colors">
-                      <td className="py-3.5 px-4.5 font-mono text-xs text-slate-400">{idx + 1}</td>
-                      <td className="py-3.5 px-4.5">
+                    <tr key={std.id} className={`hover:bg-natural-bg/50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#FBFBFA]"}`}>
+                      <td className="py-3 px-4.5 text-slate-500 font-mono">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
+                      <td className="py-3 px-4.5">
                         <div className="flex items-center gap-2.5">
                           <button
-                            onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(student)}
+                            onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(std)}
                             className="shrink-0 cursor-pointer group"
                             title="Klik untuk pratinjau foto siswa"
                           >
-                            {student.photoUrl ? (
-                              <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
+                            {std.photoUrl ? (
+                              <img src={std.photoUrl} alt={std.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
-                                {student.name.charAt(0)}
+                                {std.name.charAt(0)}
                               </div>
                             )}
                           </button>
                           <div>
-                            <span className="font-semibold text-xs text-natural-dark block">{student.name}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">ID: {student.id}</span>
+                            <span className="font-semibold text-xs text-natural-dark block">{std.name}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">ID: {std.id}</span>
                           </div>
                         </div>
                       </td>
                       <td className="py-3.5 px-4.5 font-mono text-[11px] text-slate-500 space-y-0.5">
-                        <div>{student.nisn}</div>
-                        <div><span className="bg-natural-accent text-natural-dark px-1 py-0.5 rounded text-[9px] font-bold">{student.gender}</span></div>
+                        <div>{std.nisn}</div>
+                        <div><span className="bg-natural-accent text-natural-dark px-1 py-0.5 rounded text-[9px] font-bold">{std.gender}</span></div>
                       </td>
                       
                       {/* Interactive radio-like pills */}
@@ -413,7 +426,7 @@ export default function AttendanceTracker({
                               <button
                                 key={statusValue}
                                 type="button"
-                                onClick={() => handleStatusChange(student.id, statusValue)}
+                                onClick={() => handleStatusChange(std.id, statusValue)}
                                 className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all duration-150 cursor-pointer ${
                                   isSelected ? activeStyle : "text-[#3A4138]/60 hover:text-natural-dark"
                                 }`}
@@ -430,7 +443,7 @@ export default function AttendanceTracker({
                         <input
                           type="text"
                           value={record.notes}
-                          onChange={(e) => handleNotesChange(student.id, e.target.value)}
+                          onChange={(e) => handleNotesChange(std.id, e.target.value)}
                           placeholder={record.status === AttendanceStatus.HADIR ? "Hadir tepat waktu..." : "Sakit apa / surat izin..."}
                           className="w-full bg-[#FBFBFA] hover:bg-white border border-natural-border rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:bg-white focus:border-natural-sage transition-colors"
                         />
@@ -449,6 +462,15 @@ export default function AttendanceTracker({
           </table>
         </div>
 
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={classStudents.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
+
         {/* Footer save block */}
         <div className="bg-[#FBFBFA] p-4 flex justify-between items-center border-t border-natural-border">
           <span className="text-[11px] text-slate-400 italic">
@@ -463,6 +485,9 @@ export default function AttendanceTracker({
           </button>
         </div>
       </div>
+      </>
+        );
+      })()}
     </div>
   );
 }

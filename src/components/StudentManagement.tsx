@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Student } from "../types";
+import Pagination from "./Pagination";
 
 interface StudentManagementProps {
   students: Student[];
@@ -67,6 +68,10 @@ export default function StudentManagement({
   const [selectedClass, setSelectedClass] = useState<string>("Semua Kelas");
   const [searchQuery, setSearchQuery] = useState("");
   
+  // Pagination state for students
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
   // Modal & Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -98,6 +103,15 @@ export default function StudentManagement({
       return matchesClass && matchesSearch;
     });
   }, [students, selectedClass, searchQuery]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, searchQuery]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const currentStudentsData = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleOpenAdd = () => {
     setEditingStudent(null);
@@ -531,10 +545,15 @@ export default function StudentManagement({
               </tr>
             </thead>
             <tbody className="divide-y divide-natural-border/40 text-xs">
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student, idx) => (
-                  <tr key={student.id} className="hover:bg-[#FBFBFA]/40 transition-colors">
-                    <td className="py-3 px-4.5 text-slate-400 font-mono text-center">{idx + 1}</td>
+              {currentStudentsData.length > 0 ? (
+                currentStudentsData.map((student, index) => (
+                  <tr 
+                    key={student.id} 
+                    className={`hover:bg-natural-bg/50 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-natural-bg/10"}`}
+                  >
+                    <td className="py-3 px-4.5 text-center text-xs text-slate-500 font-bold border-b border-natural-border/30">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
                     <td className="py-3 px-4.5">
                       <div className="flex items-center gap-2.5">
                         <button
@@ -609,6 +628,15 @@ export default function StudentManagement({
             </tbody>
           </table>
         </div>
+
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredStudents.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
 
         {/* Footer stat block */}
         <div className="bg-[#FBFBFA] p-4 border-t border-natural-border text-slate-400 text-[11px] italic">

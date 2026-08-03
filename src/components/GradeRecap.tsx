@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Download, Printer, Settings, CheckCircle, AlertTriangle, Search, Percent, RefreshCw } from "lucide-react";
-import { Student, Task, TaskSubmission, DisciplineLog } from "../types";
+import { Student, Task, TaskSubmission, DisciplineLog, ExamGradesData } from "../types";
+import Pagination from "./Pagination";
 
 interface GradeRecapProps {
   students: Student[];
@@ -29,6 +30,10 @@ export default function GradeRecap({
   const [selectedSubject, setSelectedSubject] = useState<string>(subjects?.[0] || "Mata Pelajaran");
   const [searchTerm, setSearchTerm] = useState("");
   const [kkm, setKkm] = useState(75);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Formula Weighting Configurations
   const [showSettings, setShowSettings] = useState(false);
@@ -141,6 +146,15 @@ export default function GradeRecap({
       (item.nisn || "").includes(searchTerm)
     );
   }, [students, selectedClass, taskAveragesMap, attitudeScoresMap, examGrades, wTasks, wAttitude, wUts, wUas, kkm, searchTerm, selectedSubject]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedClass, selectedSubject]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(classLedger.length / itemsPerPage);
+  const currentData = classLedger.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Summary Metrics
   const classStats = useMemo(() => {
@@ -412,14 +426,14 @@ export default function GradeRecap({
                 <th className="py-3 px-4 text-center print:text-left">Status ({kkm})</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-natural-border/40">
-              {classLedger.length > 0 ? (
-                classLedger.map((item, index) => {
+            <tbody className="divide-y divide-natural-border/40 text-xs">
+              {currentData.length > 0 ? (
+                currentData.map((item, idx) => {
                   const isEditing = editingExamId === item.id;
                   return (
-                    <tr key={item.id} className="hover:bg-[#FBFBFA]/30 transition-colors text-xs print:hover:bg-transparent">
-                      <td className="py-3.5 px-4 font-mono text-slate-400">{index + 1}</td>
-                      <td className="py-3.5 px-4">
+                    <tr key={item.id} className={`hover:bg-natural-bg/50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#FBFBFA]"}`}>
+                      <td className="py-3 px-4 text-slate-500 font-mono">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
                           <button
                             onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(item)}
@@ -528,6 +542,17 @@ export default function GradeRecap({
               )}
             </tbody>
           </table>
+        </div>
+        
+        <div className="print:hidden p-4 bg-[#FBFBFA] border-t border-natural-border">
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={classLedger.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Check, Edit, Star, TrendingUp, Filter, Award, Save, AlertCircle, Plus, Paperclip, X, Download, Eye, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Student, Task, TaskSubmission, DevelopmentProgress } from "../types";
 import FilePreviewModal, { PreviewableFile } from "./FilePreviewModal";
+import Pagination from "./Pagination";
 
 interface StudentProgressProps {
   students: Student[];
@@ -38,6 +39,10 @@ export default function StudentProgress({
   const [selectedClass, setSelectedClass] = useState<string>(classes[0] || "XI RPL 1");
   const [selectedSubject, setSelectedSubject] = useState<string>("Semua Mapel");
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
+
+  // Pagination state for tasks student list
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // --- SUB-TAB: TASK GRADING STATE ---
   const classTasks = useMemo(() => {
@@ -77,6 +82,15 @@ export default function StudentProgress({
   const classStudents = useMemo(() => {
     return students.filter(s => s.className === selectedClass);
   }, [students, selectedClass]);
+
+  // Reset page when task or class changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, activeTaskId]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(classStudents.length / itemsPerPage);
+  const currentData = classStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Map submissions for easy lookup
   const taskSubmissionsMap = useMemo(() => {
@@ -372,114 +386,129 @@ export default function StudentProgress({
                       <th className="py-3 px-4.5 text-right">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-natural-border/40">
-                    {classStudents.map((student) => {
-                      const submission = taskSubmissionsMap[student.id];
+                  <tbody className="divide-y divide-natural-border/40 text-xs">
+                    {currentData.length > 0 ? (
+                      currentData.map((student) => {
+                        const submission = taskSubmissionsMap[student.id];
 
-                      let statusBadge = "bg-rose-100 text-rose-800 border border-rose-300 font-bold";
-                      let statusText = "Belum Mengumpulkan";
-                      if (submission?.status === "Selesai") {
-                        statusBadge = "bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold";
-                        statusText = "Sudah Dikerjakan (Dinilai)";
-                      } else if (submission?.status === "Menunggu Penilaian") {
-                        statusBadge = "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse font-extrabold";
-                        statusText = "Menunggu Penilaian";
-                      }
+                        let statusBadge = "bg-rose-100 text-rose-800 border border-rose-300 font-bold";
+                        let statusText = "Belum Mengumpulkan";
+                        if (submission?.status === "Selesai") {
+                          statusBadge = "bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold";
+                          statusText = "Sudah Dikerjakan (Dinilai)";
+                        } else if (submission?.status === "Menunggu Penilaian") {
+                          statusBadge = "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse font-extrabold";
+                          statusText = "Menunggu Penilaian";
+                        }
 
-                      return (
-                        <tr key={student.id} className="hover:bg-[#FBFBFA]/30 transition-colors text-xs">
-                          <td className="py-4 px-4.5">
-                            <div className="flex items-center gap-2.5">
-                              <button
-                                onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(student)}
-                                className="shrink-0 cursor-pointer group"
-                                title="Klik untuk lihat foto besar"
-                              >
-                                {student.photoUrl ? (
-                                  <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    {student.name.charAt(0)}
-                                  </div>
-                                )}
-                              </button>
-                              <div>
-                                <span className="font-semibold text-natural-dark block">{student.name}</span>
-                                <span className="text-[10px] text-slate-400 font-mono">NISN: {student.nisn}</span>
-                              </div>
-                            </div>
-                            
-                            {submission?.studentAnswerText && (
-                              <div className="mt-1.5 p-2 bg-[#FBFBFA] rounded-lg border border-natural-border shadow-3xs max-w-xs">
-                                <p className="text-[9px] font-bold text-natural-mid uppercase tracking-wide">Cuplikan Jawaban:</p>
-                                <p className="text-[10px] text-slate-500 truncate">{submission.studentAnswerText}</p>
-                              </div>
-                            )}
-                            {submission?.studentAnswerFile && (
-                              <div className="mt-1.5 flex items-center justify-between gap-1.5 text-[10px] text-slate-500 bg-natural-accent/50 border border-natural-border/60 rounded-lg px-2 py-1 max-w-[200px]">
-                                <div className="flex items-center gap-1 min-w-0">
-                                  <Paperclip size={10} className="text-natural-mid shrink-0" />
-                                  <span className="font-bold text-natural-dark truncate">{submission.studentAnswerFile.name}</span>
-                                </div>
+                        return (
+                          <tr key={student.id} className="hover:bg-[#FBFBFA]/30 transition-colors">
+                            <td className="py-4 px-4.5">
+                              <div className="flex items-center gap-2.5">
                                 <button
-                                  onClick={() => setPreviewFile(submission.studentAnswerFile!)}
-                                  className="text-natural-mid hover:text-natural-dark font-bold p-0.5 hover:bg-natural-accent rounded transition-colors shrink-0 cursor-pointer flex items-center gap-0.5"
-                                  title="Pratinjau File Tanpa Download"
+                                  onClick={() => onSelectStudentPhoto && onSelectStudentPhoto(student)}
+                                  className="shrink-0 cursor-pointer group"
+                                  title="Klik untuk lihat foto besar"
                                 >
-                                  <Eye size={12} />
+                                  {student.photoUrl ? (
+                                    <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover border border-natural-border group-hover:scale-110 transition-transform" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-natural-sage/20 text-natural-sage font-bold text-xs flex items-center justify-center group-hover:scale-110 transition-transform">
+                                      {student.name.charAt(0)}
+                                    </div>
+                                  )}
                                 </button>
+                                <div>
+                                  <span className="font-semibold text-natural-dark block">{student.name}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">NISN: {student.nisn}</span>
+                                </div>
                               </div>
-                            )}
-                          </td>
-
-                          {/* Status */}
-                          <td className="py-4 px-4.5">
-                            <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-flex items-center gap-1.5 shadow-3xs ${statusBadge}`}>
-                              {submission?.status === "Selesai" ? (
-                                <CheckCircle size={12} className="text-emerald-700 shrink-0" />
-                              ) : submission?.status === "Menunggu Penilaian" ? (
-                                <Clock size={12} className="text-amber-700 shrink-0" />
-                              ) : (
-                                <XCircle size={12} className="text-rose-700 shrink-0" />
+                              
+                              {submission?.studentAnswerText && (
+                                <div className="mt-1.5 p-2 bg-[#FBFBFA] rounded-lg border border-natural-border shadow-3xs max-w-xs">
+                                  <p className="text-[9px] font-bold text-natural-mid uppercase tracking-wide">Cuplikan Jawaban:</p>
+                                  <p className="text-[10px] text-slate-500 truncate">{submission.studentAnswerText}</p>
+                                </div>
                               )}
-                              <span>{statusText}</span>
-                            </span>
-                          </td>
+                              {submission?.studentAnswerFile && (
+                                <div className="mt-1.5 flex items-center justify-between gap-1.5 text-[10px] text-slate-500 bg-natural-accent/50 border border-natural-border/60 rounded-lg px-2 py-1 max-w-[200px]">
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <Paperclip size={10} className="text-natural-mid shrink-0" />
+                                    <span className="font-bold text-natural-dark truncate">{submission.studentAnswerFile.name}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => setPreviewFile(submission.studentAnswerFile!)}
+                                    className="text-natural-mid hover:text-natural-dark font-bold p-0.5 hover:bg-natural-accent rounded transition-colors shrink-0 cursor-pointer flex items-center gap-0.5"
+                                    title="Pratinjau File Tanpa Download"
+                                  >
+                                    <Eye size={12} />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
 
-                          {/* Grade */}
-                          <td className="py-4 px-4.5">
-                            <span className="font-mono font-bold text-sm text-natural-dark">
-                              {submission?.status === "Selesai" ? submission.grade : (submission?.status === "Menunggu Penilaian" ? "0" : "-")}
-                            </span>
-                          </td>
+                            <td className="py-4 px-4.5">
+                              <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-flex items-center gap-1.5 shadow-3xs ${statusBadge}`}>
+                                {submission?.status === "Selesai" ? (
+                                  <CheckCircle size={12} className="text-emerald-700 shrink-0" />
+                                ) : submission?.status === "Menunggu Penilaian" ? (
+                                  <Clock size={12} className="text-amber-700 shrink-0" />
+                                ) : (
+                                  <XCircle size={12} className="text-rose-700 shrink-0" />
+                                )}
+                                <span>{statusText}</span>
+                              </span>
+                            </td>
 
-                          {/* Feedback text */}
-                          <td className="py-4 px-4.5 max-w-xs">
-                            <p className="text-slate-500 italic line-clamp-2">
-                              {submission?.feedback || "-"}
-                            </p>
-                          </td>
+                            <td className="py-4 px-4.5">
+                              <span className="font-mono font-bold text-sm text-natural-dark">
+                                {submission?.status === "Selesai" ? submission.grade : (submission?.status === "Menunggu Penilaian" ? "0" : "-")}
+                              </span>
+                            </td>
 
-                          {/* Detailed Review Action */}
-                          <td className="py-4 px-4.5 text-right shrink-0">
-                            <button
-                              onClick={() => openReviewModal(student.id, submission)}
-                              className={`px-3 py-1.5 rounded-lg border text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors ${
-                                submission?.status === "Menunggu Penilaian"
-                                  ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 animate-pulse font-extrabold"
-                                  : "bg-natural-accent hover:bg-natural-light text-natural-dark border-natural-border"
-                              }`}
-                              title="Review Jawaban & Beri Nilai"
-                            >
-                              <Eye size={13} />
-                              <span>Review & Nilai</span>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            <td className="py-4 px-4.5 max-w-xs">
+                              <p className="text-slate-500 italic line-clamp-2">
+                                {submission?.feedback || "-"}
+                              </p>
+                            </td>
+
+                            <td className="py-4 px-4.5 text-right shrink-0">
+                              <button
+                                onClick={() => openReviewModal(student.id, submission)}
+                                className={`px-3 py-1.5 rounded-lg border text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors ${
+                                  submission?.status === "Menunggu Penilaian"
+                                    ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 animate-pulse font-extrabold"
+                                    : "bg-natural-accent hover:bg-natural-light text-natural-dark border-natural-border"
+                                }`}
+                                title="Review Jawaban & Beri Nilai"
+                              >
+                                <Eye size={13} />
+                                <span>Review & Nilai</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-400 italic">
+                          Tidak ada siswa di kelas ini.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
+              </div>
+              
+              <div className="p-4 border-t border-natural-border bg-[#FBFBFA]">
+                <Pagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={classStudents.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
               </div>
             </div>
           )}
