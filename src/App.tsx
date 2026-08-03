@@ -916,26 +916,7 @@ saveItemToApi("task-submissions", updatedSub);
               <p className="text-[10px] text-natural-sage font-semibold tracking-wide font-mono">
                 SMKN 6 JEMBER • {isTeacher ? "MODE GURU" : "PORTAL SISWA"}
               </p>
-              <button
-                onClick={() => setActiveTab("informasi")}
-                className={`w-full flex items-center justify-between p-4 rounded-xl mb-4 transition-all border ${
-                  activeTab === "informasi"
-                    ? "bg-emerald-50 border-emerald-500 shadow-sm"
-                    : "bg-white border-natural-border hover:bg-natural-bg text-slate-500"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${activeTab === "informasi" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
-                    <FileText size={18} />
-                  </div>
-                  <div className="text-left">
-                    <p className={`text-sm font-bold ${activeTab === "informasi" ? "text-emerald-800" : "text-slate-600"}`}>
-                      Informasi Umum
-                    </p>
-                    <p className="text-[10px] text-slate-400">Pengumuman & berita</p>
-                  </div>
-                </div>
-              </button>
+
             </div>
           </div>
         </div>
