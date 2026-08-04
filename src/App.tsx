@@ -145,7 +145,6 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem("rpl_subjects", JSON.stringify(subjects));
-    saveItemToApi("subjects", subjects);
   }, [subjects]);
 
   // --- CLASSES STATE ---
@@ -162,7 +161,6 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem("rpl_classes", JSON.stringify(classes));
-    saveItemToApi("classes", classes);
   }, [classes]);
 
   // --- SAVE HOOKS / EVENTS ---
@@ -440,7 +438,9 @@ export default function App() {
     if (!cleanName) return;
     setClasses(prev => {
       if (prev.includes(cleanName)) return prev;
-      return [...prev, cleanName].sort();
+      const updated = [...prev, cleanName].sort();
+      saveItemToApi("classes", updated);
+      return updated;
     });
   };
 
@@ -449,7 +449,11 @@ export default function App() {
     const cleanNew = newClass.trim();
     if (!cleanOld || !cleanNew || cleanOld === cleanNew) return;
 
-    setClasses(prev => prev.map(c => c === cleanOld ? cleanNew : c).sort());
+    setClasses(prev => {
+      const updated = prev.map(c => c === cleanOld ? cleanNew : c).sort();
+      saveItemToApi("classes", updated);
+      return updated;
+    });
     
     // Cascade update to students
     setStudents(prev => prev.map(s => s.className === cleanOld ? { ...s, className: cleanNew } : s));
@@ -462,7 +466,11 @@ export default function App() {
     const cleanClass = classToDelete.trim();
     if (!cleanClass) return;
 
-    setClasses(prev => prev.filter(c => c !== cleanClass));
+    setClasses(prev => {
+      const updated = prev.filter(c => c !== cleanClass);
+      saveItemToApi("classes", updated);
+      return updated;
+    });
     
     // Cascade: students in the deleted class will have their class set to empty string or "Belum Ditentukan"
     setStudents(prev => prev.map(s => s.className === cleanClass ? { ...s, className: "Belum Ditentukan" } : s));
@@ -473,7 +481,9 @@ export default function App() {
     if (!cleanName) return;
     setSubjects(prev => {
       if (prev.includes(cleanName)) return prev;
-      return [...prev, cleanName].sort();
+      const updated = [...prev, cleanName].sort();
+      saveItemToApi("subjects", updated);
+      return updated;
     });
   };
 
@@ -482,7 +492,11 @@ export default function App() {
     const cleanNew = newSubject.trim();
     if (!cleanOld || !cleanNew || cleanOld === cleanNew) return;
 
-    setSubjects(prev => prev.map(s => s === cleanOld ? cleanNew : s).sort());
+    setSubjects(prev => {
+      const updated = prev.map(s => s === cleanOld ? cleanNew : s).sort();
+      saveItemToApi("subjects", updated);
+      return updated;
+    });
     
     // Cascade update to lesson plans (RPP), attendance, tasks, etc
     setLessonPlans(prev => prev.map(p => p.subject === cleanOld ? { ...p, subject: cleanNew } : p));
@@ -493,7 +507,11 @@ export default function App() {
     const cleanSubject = subjectToDelete.trim();
     if (!cleanSubject) return;
 
-    setSubjects(prev => prev.filter(s => s !== cleanSubject));
+    setSubjects(prev => {
+      const updated = prev.filter(s => s !== cleanSubject);
+      saveItemToApi("subjects", updated);
+      return updated;
+    });
   };
 
 
@@ -559,7 +577,9 @@ export default function App() {
     if (newStudent.className) {
       setClasses(prev => {
         if (prev.includes(newStudent.className)) return prev;
-        return [...prev, newStudent.className].sort();
+        const updated = [...prev, newStudent.className].sort();
+        saveItemToApi("classes", updated);
+        return updated;
       });
     }
     saveItemToApi("students", newStudent);
@@ -570,7 +590,9 @@ export default function App() {
     if (updatedStudent.className) {
       setClasses(prev => {
         if (prev.includes(updatedStudent.className)) return prev;
-        return [...prev, updatedStudent.className].sort();
+        const updated = [...prev, updatedStudent.className].sort();
+        saveItemToApi("classes", updated);
+        return updated;
       });
     }
     saveItemToApi("students", updatedStudent);
@@ -669,11 +691,18 @@ export default function App() {
       const newClassNames = Array.from(new Set(filteredNew.map(s => s.className)));
       setClasses(prevClasses => {
         const updated = [...prevClasses];
+        let hasChanges = false;
         newClassNames.forEach(cn => {
           if (cn && !updated.includes(cn)) {
             updated.push(cn);
+            hasChanges = true;
           }
         });
+        if (hasChanges) {
+          const finalUpdated = updated.sort();
+          saveItemToApi("classes", finalUpdated);
+          return finalUpdated;
+        }
         return updated.sort();
       });
 
