@@ -2,7 +2,14 @@ import { loadData, saveData } from "../data";
 
 export async function fetchFromApiOrLocal<T>(endpoint: string, localKey: string, defaultValue: T): Promise<T> {
   try {
-    const res = await fetch(`/api/${endpoint}`);
+    const timestamp = new Date().getTime();
+    const res = await fetch(`/api/${endpoint}?_t=${timestamp}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     if (res.ok) {
       const data = await res.json();
       if (data !== null && data !== undefined) {
