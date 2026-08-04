@@ -18,7 +18,7 @@ export async function fetchFromApiOrLocal<T>(endpoint: string, localKey: string,
   if (localKey === "app_auth_session" || localKey === "active_user_role") {
     return loadData(localKey, defaultValue);
   }
-  return defaultValue;
+  return undefined as unknown as T;
 }
 
 export async function saveItemToApi<T>(endpoint: string, item: T): Promise<boolean> {

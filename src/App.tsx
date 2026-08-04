@@ -617,12 +617,20 @@ export default function App() {
   };
 
   const handleUpdateStudentPassword = (studentId: string, newPassword: string) => {
-    setStudents(prev => prev.map(s => {
-      if (s.id === studentId) {
-        return { ...s, password: newPassword, hasChangedPassword: true };
+    let updatedStudentObj: Student | undefined;
+    setStudents(prev => {
+      const updated = prev.map(s => {
+        if (s.id === studentId) {
+          updatedStudentObj = { ...s, password: newPassword, hasChangedPassword: true };
+          return updatedStudentObj;
+        }
+        return s;
+      });
+      if (updatedStudentObj) {
+        saveItemToApi("students", updatedStudentObj);
       }
-      return s;
-    }));
+      return updated;
+    });
 
     if (authSession && authSession.studentData && authSession.studentData.id === studentId) {
       const updatedSession = {

@@ -161,7 +161,8 @@ export default function LoginScreen({ students, users = [], onLoginSuccess }: Lo
                   <User size={16} className="absolute left-3.5 top-3 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="cth: guru / 19940823 202112 1 002"
+                    autoComplete="off"
+                    placeholder="Contoh: guru atau NIP 19940823 202112 1 002"
                     value={teacherUsername}
                     onChange={(e) => setTeacherUsername(e.target.value)}
                     className="w-full bg-[#FBFBFA] border border-natural-border rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium focus:outline-none focus:border-natural-sage"
@@ -175,6 +176,7 @@ export default function LoginScreen({ students, users = [], onLoginSuccess }: Lo
                   <Lock size={16} className="absolute left-3.5 top-3 text-slate-400" />
                   <input
                     type="password"
+                    autoComplete="off"
                     placeholder="••••••••"
                     value={teacherPassword}
                     onChange={(e) => setTeacherPassword(e.target.value)}
@@ -209,14 +211,15 @@ export default function LoginScreen({ students, users = [], onLoginSuccess }: Lo
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4"
             >
-              <form onSubmit={(e) => handleStudentLogin(e)} className="space-y-4">
+              <form onSubmit={(e) => handleStudentLogin(e)} autoComplete="off" className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 block">Nomor Induk Siswa Nasional (NISN)</label>
                   <div className="relative">
                     <User size={16} className="absolute left-3.5 top-3 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="cth: 0074128910"
+                      autoComplete="off"
+                      placeholder="Masukkan 10 digit NISN"
                       value={nisnInput}
                       onChange={(e) => setNisnInput(e.target.value)}
                       className="w-full bg-[#FBFBFA] border border-natural-border rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium focus:outline-none focus:border-natural-sage"
@@ -232,6 +235,7 @@ export default function LoginScreen({ students, users = [], onLoginSuccess }: Lo
                     <Lock size={16} className="absolute left-3.5 top-3 text-slate-400" />
                     <input
                       type="password"
+                      autoComplete="off"
                       placeholder="Masukkan kata sandi baru Anda"
                       value={studentPassword}
                       onChange={(e) => setStudentPassword(e.target.value)}
