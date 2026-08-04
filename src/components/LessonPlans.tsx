@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Edit3, Check, Calendar, Trash2, BookOpen, AlertCircle, Paperclip, File, Download, Award, Clock, FileText, UserCheck, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
+import { Plus, Edit3, Check, Calendar, Trash2, BookOpen, AlertCircle, Paperclip, File, Download, Award, Clock, FileText, UserCheck, ChevronDown, ChevronUp, ChevronsUpDown, Copy } from "lucide-react";
 import { LessonPlan } from "../types";
 
 interface LessonPlansProps {
@@ -107,7 +107,29 @@ export default function LessonPlans({
     setTaskDescription(plan.taskDescription || "");
     setTaskMaxPoints(plan.taskMaxPoints || 100);
     setTaskDeadline(plan.taskDeadline || "");
+    setTaskDeadline(plan.taskDeadline || "");
     setIsAdding(false);
+  };
+
+  const handleOpenDuplicate = (plan: LessonPlan) => {
+    setEditingPlan(null);
+    setWeek(plan.week);
+    setSemester(plan.semester);
+    setSubject(plan.subject);
+    setClassName(plan.className);
+    setSelectedClassesForNew([plan.className]);
+    setTopic(plan.topic + " (Salinan)");
+    setCompetency(plan.competency);
+    setActivities(plan.activities);
+    setResources(plan.resources);
+    setStatus("Scheduled"); // Duplicated items start as scheduled
+    setMaterialText(plan.materialText || "");
+    setMaterialFile(plan.materialFile || null);
+    setTaskTitle(plan.taskTitle || "");
+    setTaskDescription(plan.taskDescription || "");
+    setTaskMaxPoints(plan.taskMaxPoints || 100);
+    setTaskDeadline(plan.taskDeadline || "");
+    setIsAdding(true);
   };
 
   // Helper to read file to base64
@@ -694,6 +716,14 @@ export default function LessonPlans({
                     >
                       <Check size={14} className={isCompleted ? "text-natural-sage" : "text-slate-400"} />
                       <span className="hidden sm:inline">{isCompleted ? "Selesai" : "Mulai"}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenDuplicate(plan)}
+                      className="p-1.5 text-slate-400 hover:text-natural-dark hover:bg-natural-accent rounded-lg transition-colors cursor-pointer"
+                      title="Duplikat RPP"
+                    >
+                      <Copy size={15} />
                     </button>
 
                     <button
