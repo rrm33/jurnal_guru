@@ -1366,7 +1366,7 @@ async function startServer() {
     res.status(404).json({ error: `API route ${req.originalUrl} tidak ditemukan.` });
   });
   const distPath = import_path2.default.join(process.cwd(), "dist");
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !__dirname.endsWith("dist")) {
     try {
       const vite = await (0, import_vite.createServer)({
         server: { middlewareMode: true },
@@ -1397,26 +1397,14 @@ async function startServer() {
       res.sendFile(import_path2.default.join(distPath, "index.html"));
     });
   }
-  const isNumericPort = !isNaN(Number(PORT));
-  if (isNumericPort) {
-    app.listen(Number(PORT), "0.0.0.0", async () => {
-      console.log(`Server Jurnal Guru running on port ${PORT}`);
-      try {
-        await initDbTables();
-      } catch (err) {
-        console.error("Database init error:", err);
-      }
-    });
-  } else {
-    app.listen(PORT, async () => {
-      console.log(`Server Jurnal Guru running on Passenger socket ${PORT}`);
-      try {
-        await initDbTables();
-      } catch (err) {
-        console.error("Database init error:", err);
-      }
-    });
-  }
+  app.listen(PORT, async () => {
+    console.log(`Server Jurnal Guru running on port/socket ${PORT}`);
+    try {
+      await initDbTables();
+    } catch (err) {
+      console.error("Database init error:", err);
+    }
+  });
 }
 startServer().catch((err) => {
   console.error("Failed to start server Jurnal Guru:", err);

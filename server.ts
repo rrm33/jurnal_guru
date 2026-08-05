@@ -1004,7 +1004,7 @@ async function startServer() {
   // --- VITE MIDDLEWARE FOR DEV & STATIC SERVING FOR PROD ---
   const distPath = path.join(process.cwd(), "dist");
 
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !__dirname.endsWith("dist")) {
     try {
       const vite = await createViteServer({
         server: { middlewareMode: true },
@@ -1038,27 +1038,14 @@ async function startServer() {
     });
   }
 
-  const isNumericPort = !isNaN(Number(PORT));
-  if (isNumericPort) {
-    app.listen(Number(PORT), "0.0.0.0", async () => {
-      console.log(`Server Jurnal Guru running on port ${PORT}`);
-      try {
-        await initDbTables();
-      } catch (err) {
-        console.error("Database init error:", err);
-      }
-    });
-  } else {
-    // Passenger socket path
-    app.listen(PORT, async () => {
-      console.log(`Server Jurnal Guru running on Passenger socket ${PORT}`);
-      try {
-        await initDbTables();
-      } catch (err) {
-        console.error("Database init error:", err);
-      }
-    });
-  }
+  app.listen(PORT, async () => {
+    console.log(`Server Jurnal Guru running on port/socket ${PORT}`);
+    try {
+      await initDbTables();
+    } catch (err) {
+      console.error("Database init error:", err);
+    }
+  });
 }
 
 startServer().catch((err) => {
