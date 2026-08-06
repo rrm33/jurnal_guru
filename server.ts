@@ -2,7 +2,41 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
-dotenv.config();
+import { fileURLToPath } from "url";
+
+// Robust dotenv loading for cPanel/Passenger
+const possiblePaths = [
+  path.resolve(process.cwd(), '.env')
+];
+
+try {
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  possiblePaths.push(path.resolve(currentDir, '.env'));
+  possiblePaths.push(path.resolve(currentDir, '..', '.env'));
+} catch (e) {}
+
+try {
+  // @ts-ignore
+  if (typeof __dirname !== 'undefined') {
+    // @ts-ignore
+    possiblePaths.push(path.resolve(__dirname, '.env'));
+    // @ts-ignore
+    possiblePaths.push(path.resolve(__dirname, '..', '.env'));
+  }
+} catch (e) {}
+
+let envLoaded = false;
+for (const p of possiblePaths) {
+  if (fs.existsSync(p)) {
+    dotenv.config({ path: p });
+    console.log(`[Env] Loaded from ${p}`);
+    envLoaded = true;
+    break;
+  }
+}
+if (!envLoaded) {
+  dotenv.config();
+}
 import { createServer as createViteServer } from "vite";
 import { getDbPool, isDbConnected, testDbConnectionDetailed } from "./src/db/mysql.ts";
 

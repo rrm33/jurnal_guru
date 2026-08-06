@@ -26,6 +26,7 @@ var import_express = __toESM(require("express"), 1);
 var import_path = __toESM(require("path"), 1);
 var import_fs = __toESM(require("fs"), 1);
 var import_dotenv = __toESM(require("dotenv"), 1);
+var import_url = require("url");
 var import_vite = require("vite");
 
 // src/db/mysql.ts
@@ -106,7 +107,35 @@ async function isDbConnected() {
 }
 
 // server.ts
-import_dotenv.default.config();
+var import_meta = {};
+var possiblePaths = [
+  import_path.default.resolve(process.cwd(), ".env")
+];
+try {
+  const currentDir = import_path.default.dirname((0, import_url.fileURLToPath)(import_meta.url));
+  possiblePaths.push(import_path.default.resolve(currentDir, ".env"));
+  possiblePaths.push(import_path.default.resolve(currentDir, "..", ".env"));
+} catch (e) {
+}
+try {
+  if (typeof __dirname !== "undefined") {
+    possiblePaths.push(import_path.default.resolve(__dirname, ".env"));
+    possiblePaths.push(import_path.default.resolve(__dirname, "..", ".env"));
+  }
+} catch (e) {
+}
+var envLoaded = false;
+for (const p of possiblePaths) {
+  if (import_fs.default.existsSync(p)) {
+    import_dotenv.default.config({ path: p });
+    console.log(`[Env] Loaded from ${p}`);
+    envLoaded = true;
+    break;
+  }
+}
+if (!envLoaded) {
+  import_dotenv.default.config();
+}
 function processBase64Photo(base64Str, id) {
   if (!base64Str || !base64Str.startsWith("data:image/")) return base64Str;
   const uploadDir = import_path.default.join(process.cwd(), "public", "uploads", "photos");
