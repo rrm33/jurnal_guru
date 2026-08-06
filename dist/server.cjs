@@ -403,10 +403,10 @@ async function startServer() {
   app.all("/api/init-db", async (req, res) => {
     const testResult = await testDbConnectionDetailed();
     if (!testResult.connected) {
-      return res.status(200).json({
-        success: true,
-        message: "Memakai Server JSON Storage. MySQL tidak aktif.",
-        mode: "json_server"
+      return res.status(500).json({
+        success: false,
+        message: "MySQL tidak aktif. Tidak dapat melanjutkan.",
+        mode: "error"
       });
     }
     const initResult = await initDbTables();
