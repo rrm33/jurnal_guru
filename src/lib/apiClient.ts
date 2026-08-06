@@ -20,12 +20,8 @@ export async function fetchFromApiOrLocal<T>(endpoint: string, localKey: string,
     console.warn(`[API] Could not fetch /api/${endpoint}, network error:`, err);
   }
   
-  // Jika API mati, fallback ke defaultValue (tanpa baca localStorage)
-  // Kecuali untuk auth session yang masih kita izinkan pakai loadData
-  if (localKey === "app_auth_session" || localKey === "active_user_role") {
-    return loadData(localKey, defaultValue);
-  }
-  return undefined as unknown as T;
+  // Jika API mati, fallback ke defaultValue (lewat loadData) agar support mode offline
+  return loadData(localKey, defaultValue);
 }
 
 export async function saveItemToApi<T>(endpoint: string, item: T): Promise<boolean> {

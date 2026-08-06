@@ -40,18 +40,20 @@ export const safeString = (val: any): string => {
 
 // LocalStorage helpers to allow state persistence across reloads
 export const loadData = <T>(key: string, defaultValue: T): T => {
-  // Hanya simpan sesi login di localStorage. Buang cache data lokal lainnya (paksa pakai MySQL)
-  if (key !== "app_auth_session" && key !== "active_user_role") {
-    return defaultValue;
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    try {
+      let parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        if (key === "lesson_plans") parsed = parsed.filter((p: any) => p && typeof p.id === 'string' && !p.id.startsWith("lp_"));
+        if (key === "students") parsed = parsed.filter((s: any) => s && typeof s.id === 'string' && !s.id.startsWith("std_"));
+      }
+      return parsed;
+    } catch (e) {
+      console.error("Error parsing data from localStorage", e);
+    }
   }
-
-  try {
-    const saved = localStorage.getItem(key);
-    if (!saved) return defaultValue;
-    return JSON.parse(saved);
-  } catch (e) {
-    return defaultValue;
-  }
+  return defaultValue;
 };
 
 export const saveData = <T>(key: string, data: T): void => {
