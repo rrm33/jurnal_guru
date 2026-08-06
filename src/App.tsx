@@ -80,57 +80,27 @@ export default function App() {
   } | null>(() => loadData("app_auth_session", null));
 
   // --- USER ACCOUNTS STATE ---
-  const [users, setUsers] = useState<UserAccount[]>(() => 
-    loadData("user_accounts", INITIAL_USER_ACCOUNTS)
-  );
+  const [users, setUsers] = useState<UserAccount[]>([]);
 
   // --- LIGHTBOX PHOTO MODAL STATE ---
   const [selectedPhotoStudent, setSelectedPhotoStudent] = useState<any>(null);
 
   // --- DATABASE STATE CORE ---
-  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>(() => 
-    loadData("teacher_profile", DEFAULT_TEACHER_PROFILE)
-  );
-  const [students, setStudents] = useState<Student[]>(() => 
-    loadData("students", INITIAL_STUDENTS)
-  );
-  const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>(() => 
-    loadData("lesson_plans", INITIAL_LESSON_PLANS)
-  );
-  const [attendance, setAttendance] = useState<Attendance[]>(() => 
-    loadData("attendance", INITIAL_ATTENDANCE)
-  );
-  const [materials, setMaterials] = useState<Material[]>(() => 
-    loadData("materials", INITIAL_MATERIALS)
-  );
-  const [tasks, setTasks] = useState<Task[]>(() => 
-    loadData("tasks", INITIAL_TASKS)
-  );
-  const [submissions, setSubmissions] = useState<TaskSubmission[]>(() => 
-    loadData("task_submissions", INITIAL_TASK_SUBMISSIONS)
-  );
-  const [developmentLogs, setDevelopmentLogs] = useState<DevelopmentProgress[]>(() => 
-    loadData("development_logs", INITIAL_DEVELOPMENT_PROGRESS)
-  );
-  const [disciplineLogs, setDisciplineLogs] = useState<DisciplineLog[]>(() => 
-    loadData("discipline_logs", INITIAL_DISCIPLINE_LOGS)
-  );
-  const [informations, setInformations] = useState<Information[]>(() => 
-    loadData("informations", [])
-  );
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>({
+    name: "", nip: "", school: "", subjectGroup: ""
+  });
+  const [students, setStudents] = useState<Student[]>([]);
+  const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
+  const [developmentLogs, setDevelopmentLogs] = useState<DevelopmentProgress[]>([]);
+  const [disciplineLogs, setDisciplineLogs] = useState<DisciplineLog[]>([]);
+  const [informations, setInformations] = useState<Information[]>([]);
   
   // Custom states: Midterm & Final Exams state
-  const [examGrades, setExamGrades] = useState<ExamGradesData>(() => {
-    // default exams to 80 for realistic presentation
-    const defaultExams: ExamGradesData = {};
-    INITIAL_STUDENTS.forEach(std => {
-      defaultExams[std.id] = {
-        "Pemrograman Mobile": { uts: 80, uas: 82 },
-        "Rekayasa Perangkat Lunak": { uts: 80, uas: 82 }
-      };
-    });
-    return loadData("exam_grades", defaultExams);
-  });
+  const [examGrades, setExamGrades] = useState<ExamGradesData>({});
 
   // --- SUBJECTS DATABASE STATE ---
   const [subjects, setSubjects] = useState<string[]>(() => {
@@ -849,12 +819,7 @@ saveItemToApi("task-submissions", updatedSub);
       if (parsed.examGrades) setExamGrades(parsed.examGrades);
       if (parsed.informations) setInformations(parsed.informations);
 
-      // Sync data snapshot to backend
-      fetch("/api/sync-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: jsonData
-      }).catch(() => {});
+
     } catch (e) {
       console.error("Error parsing backup string during import process", e);
     }
@@ -862,41 +827,17 @@ saveItemToApi("task-submissions", updatedSub);
 
   const handleResetData = () => {
     localStorage.clear();
-    setTeacherProfile(DEFAULT_TEACHER_PROFILE);
-    setStudents(INITIAL_STUDENTS);
-    setLessonPlans(INITIAL_LESSON_PLANS);
-    setAttendance(INITIAL_ATTENDANCE);
-    setMaterials(INITIAL_MATERIALS);
-    setTasks(INITIAL_TASKS);
-    setSubmissions(INITIAL_TASK_SUBMISSIONS);
-    setDevelopmentLogs(INITIAL_DEVELOPMENT_PROGRESS);
-    setDisciplineLogs(INITIAL_DISCIPLINE_LOGS);
+    setTeacherProfile({ name: "", nip: "", school: "", subjectGroup: "" });
+    setStudents([]);
+    setLessonPlans([]);
+    setAttendance([]);
+    setMaterials([]);
+    setTasks([]);
+    setSubmissions([]);
+    setDevelopmentLogs([]);
+    setDisciplineLogs([]);
     setInformations([]);
-
-    const defaultExams: { [studentId: string]: { uts: number; uas: number } } = {};
-    INITIAL_STUDENTS.forEach(std => {
-      defaultExams[std.id] = { uts: 80, uas: 82 };
-    });
-    setExamGrades(defaultExams);
-
-    // Sync default reset data to backend
-    fetch("/api/sync-all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        teacherProfile: DEFAULT_TEACHER_PROFILE,
-        students: INITIAL_STUDENTS,
-        lessonPlans: INITIAL_LESSON_PLANS,
-        attendance: INITIAL_ATTENDANCE,
-        materials: INITIAL_MATERIALS,
-        tasks: INITIAL_TASKS,
-        taskSubmissions: INITIAL_TASK_SUBMISSIONS,
-        developmentProgress: INITIAL_DEVELOPMENT_PROGRESS,
-        disciplineLogs: INITIAL_DISCIPLINE_LOGS,
-        examGrades: defaultExams,
-        informations: []
-      })
-    }).catch(() => {});
+    setExamGrades({});
   };
 
   // Sidebar Menu configuration
