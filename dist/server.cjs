@@ -23,8 +23,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 
 // server.ts
 var import_express = __toESM(require("express"), 1);
-var import_path2 = __toESM(require("path"), 1);
-var import_fs2 = __toESM(require("fs"), 1);
+var import_path = __toESM(require("path"), 1);
+var import_fs = __toESM(require("fs"), 1);
 var import_dotenv = __toESM(require("dotenv"), 1);
 var import_vite = require("vite");
 
@@ -105,376 +105,21 @@ async function isDbConnected() {
   return result.connected;
 }
 
-// src/db/jsonStore.ts
-var import_fs = __toESM(require("fs"), 1);
-var import_path = __toESM(require("path"), 1);
-var DATA_DIR = import_path.default.join(process.cwd(), "data");
-var DB_FILE = import_path.default.join(DATA_DIR, "app_db.json");
-if (!import_fs.default.existsSync(DATA_DIR)) {
-  try {
-    import_fs.default.mkdirSync(DATA_DIR, { recursive: true });
-  } catch (err) {
-    console.error("Failed to create data directory:", err);
-  }
-}
-function getInitialDbData() {
-  return {
-    teacherProfile: {
-      name: "Ryan Maulana, S.Kom.",
-      nip: "19940823 202112 1 002",
-      school: "SMKN 6 Jember",
-      subjectGroup: "Rekayasa Perangkat Lunak (RPL)"
-    },
-    students: [
-      { id: "std_101", name: "Aditya Pratama Putra", nisn: "0074128910", className: "XI RPL 1", gender: "L" },
-      { id: "std_102", name: "Ahmad Fauzi", nisn: "0075192831", className: "XI RPL 1", gender: "L" },
-      { id: "std_103", name: "Bunga Lestari", nisn: "0081293847", className: "XI RPL 1", gender: "P" },
-      { id: "std_104", name: "Dwi Wahyudi", nisn: "0072938471", className: "XI RPL 1", gender: "L" },
-      { id: "std_105", name: "Eka Rahmawati", nisn: "0083102938", className: "XI RPL 1", gender: "P" },
-      { id: "std_106", name: "Fajar Ramadhan", nisn: "0079301928", className: "XI RPL 1", gender: "L" },
-      { id: "std_107", name: "Gita Cahyani", nisn: "0084920193", className: "XI RPL 1", gender: "P" },
-      { id: "std_108", name: "Hendra Wijaya", nisn: "0071920394", className: "XI RPL 1", gender: "L" },
-      { id: "std_109", name: "Indah Permatasari", nisn: "0083920194", className: "XI RPL 1", gender: "P" },
-      { id: "std_110", name: "Muhammad Rizky", nisn: "0074920195", className: "XI RPL 1", gender: "L" },
-      { id: "std_201", name: "Nabila Putri Salsabila", nisn: "0083920111", className: "XI RPL 2", gender: "P" },
-      { id: "std_202", name: "Nurul Hidayah", nisn: "0072938422", className: "XI RPL 2", gender: "P" },
-      { id: "std_203", name: "Pratama Yudha", nisn: "0073948273", className: "XI RPL 2", gender: "L" },
-      { id: "std_204", name: "Rian Ardiansyah", nisn: "0082938411", className: "XI RPL 2", gender: "L" },
-      { id: "std_205", name: "Siti Aminah", nisn: "0074829302", className: "XI RPL 2", gender: "P" },
-      { id: "std_206", name: "Taufik Hidayat", nisn: "0072938403", className: "XI RPL 2", gender: "L" },
-      { id: "std_207", name: "Vina Amelia", nisn: "0082910394", className: "XI RPL 2", gender: "P" },
-      { id: "std_208", name: "Wahyu Saputra", nisn: "0073910293", className: "XI RPL 2", gender: "L" },
-      { id: "std_209", name: "Yusuf Ibrahim", nisn: "0074910294", className: "XI RPL 2", gender: "L" },
-      { id: "std_210", name: "Zahra Syafira", nisn: "0083910295", className: "XI RPL 2", gender: "P" }
-    ],
-    subjects: ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"],
-    classes: ["XI RPL 1", "XI RPL 2"],
-    lessonPlans: [],
-    attendance: [],
-    materials: [],
-    tasks: [],
-    taskSubmissions: [],
-    developmentProgress: [],
-    disciplineLogs: [],
-    examGrades: {
-      "std_101": { uts: 80, uas: 82 },
-      "std_102": { uts: 80, uas: 82 },
-      "std_103": { uts: 80, uas: 82 },
-      "std_104": { uts: 80, uas: 82 },
-      "std_105": { uts: 80, uas: 82 },
-      "std_106": { uts: 80, uas: 82 },
-      "std_107": { uts: 80, uas: 82 },
-      "std_108": { uts: 80, uas: 82 },
-      "std_109": { uts: 80, uas: 82 },
-      "std_110": { uts: 80, uas: 82 },
-      "std_201": { uts: 80, uas: 82 },
-      "std_202": { uts: 80, uas: 82 },
-      "std_203": { uts: 80, uas: 82 },
-      "std_204": { uts: 80, uas: 82 },
-      "std_205": { uts: 80, uas: 82 },
-      "std_206": { uts: 80, uas: 82 },
-      "std_207": { uts: 80, uas: 82 },
-      "std_208": { uts: 80, uas: 82 },
-      "std_209": { uts: 80, uas: 82 },
-      "std_210": { uts: 80, uas: 82 }
-    }
-  };
-}
-function readJsonDb() {
-  try {
-    if (import_fs.default.existsSync(DB_FILE)) {
-      const raw = import_fs.default.readFileSync(DB_FILE, "utf-8");
-      if (raw.trim()) {
-        const parsed = JSON.parse(raw);
-        return {
-          teacherProfile: parsed.teacherProfile || null,
-          students: Array.isArray(parsed.students) ? parsed.students : [],
-          subjects: Array.isArray(parsed.subjects) ? parsed.subjects : ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"],
-          classes: Array.isArray(parsed.classes) ? parsed.classes : ["XI RPL 1", "XI RPL 2"],
-          lessonPlans: Array.isArray(parsed.lessonPlans) ? parsed.lessonPlans : [],
-          attendance: Array.isArray(parsed.attendance) ? parsed.attendance : [],
-          materials: Array.isArray(parsed.materials) ? parsed.materials : [],
-          tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
-          taskSubmissions: Array.isArray(parsed.taskSubmissions) ? parsed.taskSubmissions : [],
-          developmentProgress: Array.isArray(parsed.developmentProgress) ? parsed.developmentProgress : [],
-          disciplineLogs: Array.isArray(parsed.disciplineLogs) ? parsed.disciplineLogs : [],
-          examGrades: parsed.examGrades || {}
-        };
-      }
-    }
-  } catch (err) {
-    console.error("[JSON DB] Error reading DB file:", err);
-  }
-  const initial = getInitialDbData();
-  writeJsonDb(initial);
-  return initial;
-}
-function writeJsonDb(data) {
-  try {
-    import_fs.default.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-    return true;
-  } catch (err) {
-    console.error("[JSON DB] Error writing DB file:", err);
-    return false;
-  }
-}
-function getJsonTeacherProfile() {
-  const db = readJsonDb();
-  return db.teacherProfile;
-}
-function saveJsonTeacherProfile(profile) {
-  const db = readJsonDb();
-  db.teacherProfile = profile;
-  writeJsonDb(db);
-  return profile;
-}
-function getJsonStudents() {
-  const db = readJsonDb();
-  return db.students;
-}
-function saveJsonStudentBulk(students) {
-  const db = readJsonDb();
-  for (const student of students) {
-    const idx = db.students.findIndex((s) => s.id === student.id);
-    if (idx >= 0) {
-      db.students[idx] = { ...db.students[idx], ...student };
-    } else {
-      db.students.push(student);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function deleteJsonStudent(id) {
-  const db = readJsonDb();
-  db.students = db.students.filter((s) => s.id !== id);
-  writeJsonDb(db);
-  return true;
-}
-function getJsonLessonPlans() {
-  const db = readJsonDb();
-  return db.lessonPlans;
-}
-function saveJsonLessonPlanBulk(plans) {
-  const db = readJsonDb();
-  for (const plan of plans) {
-    const idx = db.lessonPlans.findIndex((p) => p.id === plan.id);
-    if (idx >= 0) {
-      db.lessonPlans[idx] = { ...db.lessonPlans[idx], ...plan };
-    } else {
-      db.lessonPlans.push(plan);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function deleteJsonLessonPlan(id) {
-  const db = readJsonDb();
-  db.lessonPlans = db.lessonPlans.filter((p) => p.id !== id);
-  writeJsonDb(db);
-  return true;
-}
-function getJsonAttendance() {
-  const db = readJsonDb();
-  return db.attendance;
-}
-function saveJsonAttendance(att) {
-  const db = readJsonDb();
-  const idx = db.attendance.findIndex((a) => a.id === att.id);
-  if (idx >= 0) {
-    db.attendance[idx] = { ...db.attendance[idx], ...att };
-  } else {
-    db.attendance.push(att);
-  }
-  writeJsonDb(db);
-  return att;
-}
-function saveJsonAttendanceBulk(items) {
-  const db = readJsonDb();
-  for (const att of items) {
-    const idx = db.attendance.findIndex((a) => a.id === att.id);
-    if (idx >= 0) {
-      db.attendance[idx] = { ...db.attendance[idx], ...att };
-    } else {
-      db.attendance.push(att);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function getJsonMaterials() {
-  const db = readJsonDb();
-  return db.materials;
-}
-function saveJsonMaterialBulk(materials) {
-  const db = readJsonDb();
-  for (const mat of materials) {
-    const idx = db.materials.findIndex((m) => m.id === mat.id);
-    if (idx >= 0) {
-      db.materials[idx] = { ...db.materials[idx], ...mat };
-    } else {
-      db.materials.push(mat);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function deleteJsonMaterial(id) {
-  const db = readJsonDb();
-  db.materials = db.materials.filter((m) => m.id !== id);
-  writeJsonDb(db);
-  return true;
-}
-function getJsonTasks() {
-  const db = readJsonDb();
-  return db.tasks;
-}
-function saveJsonTaskBulk(tasks) {
-  const db = readJsonDb();
-  for (const task of tasks) {
-    const idx = db.tasks.findIndex((t) => t.id === task.id);
-    if (idx >= 0) {
-      db.tasks[idx] = { ...db.tasks[idx], ...task };
-    } else {
-      db.tasks.push(task);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function deleteJsonTask(id) {
-  const db = readJsonDb();
-  db.tasks = db.tasks.filter((t) => t.id !== id);
-  writeJsonDb(db);
-  return true;
-}
-function getJsonTaskSubmissions() {
-  const db = readJsonDb();
-  return db.taskSubmissions;
-}
-function saveJsonTaskSubmissionBulk(submissions) {
-  const db = readJsonDb();
-  for (const sub of submissions) {
-    const idx = db.taskSubmissions.findIndex((s) => s.id === sub.id);
-    if (idx >= 0) {
-      db.taskSubmissions[idx] = { ...db.taskSubmissions[idx], ...sub };
-    } else {
-      db.taskSubmissions.push(sub);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function getJsonDevelopmentProgress() {
-  const db = readJsonDb();
-  return db.developmentProgress;
-}
-function saveJsonDevelopmentProgressBulk(progress) {
-  const db = readJsonDb();
-  for (const prog of progress) {
-    const idx = db.developmentProgress.findIndex((p) => p.id === prog.id);
-    if (idx >= 0) {
-      db.developmentProgress[idx] = { ...db.developmentProgress[idx], ...prog };
-    } else {
-      db.developmentProgress.push(prog);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function deleteJsonDevelopmentProgress(id) {
-  const db = readJsonDb();
-  db.developmentProgress = db.developmentProgress.filter((p) => p.id !== id);
-  writeJsonDb(db);
-  return true;
-}
-function getJsonDisciplineLogs() {
-  const db = readJsonDb();
-  return db.disciplineLogs;
-}
-function saveJsonDisciplineLogBulk(logs) {
-  const db = readJsonDb();
-  for (const disc of logs) {
-    const idx = db.disciplineLogs.findIndex((d) => d.id === disc.id);
-    if (idx >= 0) {
-      db.disciplineLogs[idx] = { ...db.disciplineLogs[idx], ...disc };
-    } else {
-      db.disciplineLogs.push(disc);
-    }
-  }
-  writeJsonDb(db);
-  return true;
-}
-function deleteJsonDisciplineLog(id) {
-  const db = readJsonDb();
-  db.disciplineLogs = db.disciplineLogs.filter((d) => d.id !== id);
-  writeJsonDb(db);
-  return true;
-}
-function getJsonExamGrades() {
-  const db = readJsonDb();
-  return db.examGrades || {};
-}
-function saveJsonExamGrade(studentId, uts, uas) {
-  const db = readJsonDb();
-  if (!db.examGrades) db.examGrades = {};
-  db.examGrades[studentId] = { uts, uas };
-  writeJsonDb(db);
-  return db.examGrades[studentId];
-}
-function saveJsonExamGradesBulk(examGradesMap) {
-  const db = readJsonDb();
-  db.examGrades = { ...db.examGrades, ...examGradesMap };
-  writeJsonDb(db);
-  return db.examGrades;
-}
-function getJsonSubjects() {
-  return readJsonDb().subjects;
-}
-function saveJsonSubjectsBulk(items) {
-  const db = readJsonDb();
-  db.subjects = items;
-  writeJsonDb(db);
-}
-function getJsonClasses() {
-  return readJsonDb().classes;
-}
-function saveJsonClassesBulk(items) {
-  const db = readJsonDb();
-  db.classes = items;
-  writeJsonDb(db);
-}
-function syncAllDataToJson(allData) {
-  const db = readJsonDb();
-  if (allData.teacherProfile) db.teacherProfile = allData.teacherProfile;
-  if (Array.isArray(allData.students) && allData.students.length > 0) db.students = allData.students;
-  if (Array.isArray(allData.lessonPlans) && allData.lessonPlans.length > 0) db.lessonPlans = allData.lessonPlans;
-  if (Array.isArray(allData.attendance) && allData.attendance.length > 0) db.attendance = allData.attendance;
-  if (Array.isArray(allData.materials) && allData.materials.length > 0) db.materials = allData.materials;
-  if (Array.isArray(allData.tasks) && allData.tasks.length > 0) db.tasks = allData.tasks;
-  if (Array.isArray(allData.taskSubmissions) && allData.taskSubmissions.length > 0) db.taskSubmissions = allData.taskSubmissions;
-  if (Array.isArray(allData.developmentProgress) && allData.developmentProgress.length > 0) db.developmentProgress = allData.developmentProgress;
-  if (Array.isArray(allData.disciplineLogs) && allData.disciplineLogs.length > 0) db.disciplineLogs = allData.disciplineLogs;
-  if (allData.examGrades && Object.keys(allData.examGrades).length > 0) db.examGrades = allData.examGrades;
-  writeJsonDb(db);
-  return db;
-}
-
 // server.ts
 import_dotenv.default.config();
 function processBase64Photo(base64Str, id) {
   if (!base64Str || !base64Str.startsWith("data:image/")) return base64Str;
-  const uploadDir = import_path2.default.join(process.cwd(), "public", "uploads", "photos");
-  if (!import_fs2.default.existsSync(uploadDir)) {
-    import_fs2.default.mkdirSync(uploadDir, { recursive: true });
+  const uploadDir = import_path.default.join(process.cwd(), "public", "uploads", "photos");
+  if (!import_fs.default.existsSync(uploadDir)) {
+    import_fs.default.mkdirSync(uploadDir, { recursive: true });
   }
   const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
   if (!matches || matches.length !== 3) return base64Str;
   const ext = matches[1].split("/")[1]?.replace("jpeg", "jpg") || "jpg";
   const buffer = Buffer.from(matches[2], "base64");
   const filename = `${id}_${Date.now()}.${ext}`;
-  const filepath = import_path2.default.join(uploadDir, filename);
-  import_fs2.default.writeFileSync(filepath, buffer);
+  const filepath = import_path.default.join(uploadDir, filename);
+  import_fs.default.writeFileSync(filepath, buffer);
   return `/uploads/photos/${filename}`;
 }
 async function uploadToTelegram(base64Str, filename) {
@@ -524,7 +169,7 @@ async function startServer() {
   });
   app.use(import_express.default.json({ limit: "50mb" }));
   app.use(import_express.default.urlencoded({ extended: true, limit: "50mb" }));
-  app.use("/uploads", import_express.default.static(import_path2.default.join(process.cwd(), "public/uploads")));
+  app.use("/uploads", import_express.default.static(import_path.default.join(process.cwd(), "public/uploads")));
   app.get("/api/health", async (req, res) => {
     try {
       const testResult = await testDbConnectionDetailed();
@@ -544,8 +189,8 @@ async function startServer() {
         res.json({
           status: "ok",
           database: "connected",
-          mode: "json_server",
-          message: "Server JSON Storage Aktif - Semua data tersimpan terpusat di server & dapat diakses antar-perangkat.",
+          mode: "error",
+          message: "MySQL disconnected.",
           mysqlError: testResult.error,
           config: {
             host: testResult.host,
@@ -558,22 +203,22 @@ async function startServer() {
       res.json({
         status: "ok",
         database: "connected",
-        mode: "json_server",
-        message: "Server JSON Storage Aktif - Semua data tersimpan terpusat di server.",
+        mode: "error",
+        message: "MySQL disconnected.",
         mysqlError: err.message || String(err)
       });
     }
   });
   async function initDbTables() {
     if (!process.env.DB_HOST || !(process.env.DB_NAME || process.env.DB_DATABASE)) {
-      return { success: false, mode: "json_server" };
+      return { success: false, error: "MySQL not configured" };
     }
     const connected = await isDbConnected();
     if (!connected) {
-      return { success: false, mode: "json_server" };
+      return { success: false, error: "MySQL not configured" };
     }
     const pool2 = getDbPool();
-    if (!pool2) return { success: false, mode: "json_server" };
+    if (!pool2) return { success: false, error: "MySQL not configured" };
     try {
       await pool2.query(`
         CREATE TABLE IF NOT EXISTS teacher_profile (
@@ -777,17 +422,17 @@ async function startServer() {
       try {
         const [rows] = await pool2.query("SELECT name, nip, school, subjectGroup, photoUrl FROM teacher_profile LIMIT 1");
         if (rows && rows.length > 0) return res.json(rows[0]);
+        return res.json({});
       } catch (err) {
       }
     }
-    res.json(getJsonTeacherProfile());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/teacher-profile", async (req, res) => {
     const profile = req.body;
     if (profile.photoUrl) {
       profile.photoUrl = processBase64Photo(profile.photoUrl, "teacher");
     }
-    saveJsonTeacherProfile(profile);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -821,17 +466,14 @@ async function startServer() {
     if (pool2) {
       try {
         const [rows] = await pool2.query("SELECT name FROM subjects");
-        if (rows && rows.length > 0) {
-          return res.json(rows.map((r) => r.name));
-        }
+        return res.json((rows || []).map((r) => r.name));
       } catch (err) {
       }
     }
-    return res.json(getJsonSubjects());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/subjects", async (req, res) => {
     const items = req.body;
-    saveJsonSubjectsBulk(items);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -850,17 +492,14 @@ async function startServer() {
     if (pool2) {
       try {
         const [rows] = await pool2.query("SELECT name FROM classes");
-        if (rows && rows.length > 0) {
-          return res.json(rows.map((r) => r.name));
-        }
+        return res.json((rows || []).map((r) => r.name));
       } catch (err) {
       }
     }
-    return res.json(getJsonClasses());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/classes", async (req, res) => {
     const items = req.body;
-    saveJsonClassesBulk(items);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -889,7 +528,7 @@ async function startServer() {
       } catch (err) {
       }
     }
-    res.json(getJsonStudents());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/students", async (req, res) => {
     const body = req.body;
@@ -901,7 +540,6 @@ async function startServer() {
           s.photoUrl = processBase64Photo(s.photoUrl, s.id || "student");
         }
       }
-      saveJsonStudentBulk(items.filter((s) => s && s.id));
     }
     if (pool2) {
       for (const student of items) {
@@ -920,7 +558,6 @@ async function startServer() {
     res.json({ success: true });
   });
   app.delete("/api/students/:id", async (req, res) => {
-    deleteJsonStudent(req.params.id);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -945,7 +582,7 @@ async function startServer() {
       } catch (err) {
       }
     }
-    res.json(getJsonLessonPlans());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/lesson-plans", async (req, res) => {
     const body = req.body;
@@ -957,7 +594,6 @@ async function startServer() {
           lp.materialFile.dataUrl = await uploadToTelegram(lp.materialFile.dataUrl, lp.materialFile.name);
         }
       }
-      saveJsonLessonPlanBulk(items.filter((lp) => lp && lp.id));
     }
     if (pool2) {
       for (const lp of items) {
@@ -993,7 +629,6 @@ async function startServer() {
     res.json({ success: true });
   });
   app.delete("/api/lesson-plans/:id", async (req, res) => {
-    deleteJsonLessonPlan(req.params.id);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -1008,15 +643,14 @@ async function startServer() {
     if (pool2) {
       try {
         const [rows] = await pool2.query("SELECT * FROM attendance");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
       }
     }
-    res.json(getJsonAttendance());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/attendance", async (req, res) => {
     const att = req.body;
-    saveJsonAttendance(att);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -1033,7 +667,6 @@ async function startServer() {
   app.post("/api/attendance/bulk", async (req, res) => {
     const items = req.body;
     if (Array.isArray(items)) {
-      saveJsonAttendanceBulk(items);
       const pool2 = getDbPool();
       if (pool2) {
         try {
@@ -1064,7 +697,7 @@ async function startServer() {
       } catch (err) {
       }
     }
-    res.json(getJsonMaterials());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/materials", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
@@ -1074,7 +707,6 @@ async function startServer() {
           m.file.dataUrl = await uploadToTelegram(m.file.dataUrl, m.file.name);
         }
       }
-      saveJsonMaterialBulk(items.filter((m) => m && m.id));
     }
     const pool2 = getDbPool();
     if (pool2) {
@@ -1093,7 +725,6 @@ async function startServer() {
     res.json({ success: true });
   });
   app.delete("/api/materials/:id", async (req, res) => {
-    deleteJsonMaterial(req.params.id);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -1108,15 +739,14 @@ async function startServer() {
     if (pool2) {
       try {
         const [rows] = await pool2.query("SELECT * FROM tasks");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
       }
     }
-    res.json(getJsonTasks());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/tasks", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonTaskBulk(items.filter((t) => t && t.id));
     const pool2 = getDbPool();
     if (pool2) {
       for (const t of items) {
@@ -1134,7 +764,6 @@ async function startServer() {
     res.json({ success: true });
   });
   app.delete("/api/tasks/:id", async (req, res) => {
-    deleteJsonTask(req.params.id);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -1159,7 +788,7 @@ async function startServer() {
       } catch (err) {
       }
     }
-    res.json(getJsonTaskSubmissions());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/task-submissions", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
@@ -1169,7 +798,6 @@ async function startServer() {
           s.studentAnswerFile.dataUrl = await uploadToTelegram(s.studentAnswerFile.dataUrl, s.studentAnswerFile.name);
         }
       }
-      saveJsonTaskSubmissionBulk(items.filter((s) => s && s.id));
     }
     const pool2 = getDbPool();
     if (pool2) {
@@ -1202,15 +830,14 @@ async function startServer() {
     if (pool2) {
       try {
         const [rows] = await pool2.query("SELECT * FROM development_progress");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
       }
     }
-    res.json(getJsonDevelopmentProgress());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/development-progress", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonDevelopmentProgressBulk(items.filter((p) => p && p.id));
     const pool2 = getDbPool();
     if (pool2) {
       for (const p of items) {
@@ -1228,7 +855,6 @@ async function startServer() {
     res.json({ success: true });
   });
   app.delete("/api/development-progress/:id", async (req, res) => {
-    deleteJsonDevelopmentProgress(req.params.id);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -1243,15 +869,14 @@ async function startServer() {
     if (pool2) {
       try {
         const [rows] = await pool2.query("SELECT * FROM discipline_logs");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
       }
     }
-    res.json(getJsonDisciplineLogs());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/discipline-logs", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonDisciplineLogBulk(items.filter((l) => l && l.id));
     const pool2 = getDbPool();
     if (pool2) {
       for (const l of items) {
@@ -1269,7 +894,6 @@ async function startServer() {
     res.json({ success: true });
   });
   app.delete("/api/discipline-logs/:id", async (req, res) => {
-    deleteJsonDisciplineLog(req.params.id);
     const pool2 = getDbPool();
     if (pool2) {
       try {
@@ -1280,14 +904,12 @@ async function startServer() {
     res.json({ success: true });
   });
   app.get("/api/exam-grades", (req, res) => {
-    res.json(getJsonExamGrades());
+    return res.status(500).json({ error: "Database offline" });
   });
   app.post("/api/exam-grades", (req, res) => {
     const body = req.body;
     if (body.studentId) {
-      saveJsonExamGrade(body.studentId, body.uts, body.uas);
     } else if (typeof body === "object") {
-      saveJsonExamGradesBulk(body);
     }
     res.json({ success: true });
   });
@@ -1354,18 +976,10 @@ async function startServer() {
       res.json({ success: false });
     }
   });
-  app.post("/api/sync-all", (req, res) => {
-    try {
-      const synced = syncAllDataToJson(req.body);
-      res.json({ success: true, data: synced });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
   app.all("/api/*", (req, res) => {
     res.status(404).json({ error: `API route ${req.originalUrl} tidak ditemukan.` });
   });
-  const distPath = import_path2.default.join(process.cwd(), "dist");
+  const distPath = import_path.default.join(process.cwd(), "dist");
   if (process.env.NODE_ENV !== "production" && !__dirname.endsWith("dist")) {
     try {
       const vite = await (0, import_vite.createServer)({
@@ -1378,14 +992,14 @@ async function startServer() {
       app.use(import_express.default.static(distPath, { index: false }));
       app.get("*", (req, res) => {
         res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.sendFile(import_path2.default.join(distPath, "index.html"));
+        res.sendFile(import_path.default.join(distPath, "index.html"));
       });
     }
   } else {
     app.use(import_express.default.static(distPath, {
       index: false,
-      setHeaders: (res, path3) => {
-        if (path3.endsWith(".html")) {
+      setHeaders: (res, path2) => {
+        if (path2.endsWith(".html")) {
           res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         } else {
           res.setHeader("Cache-Control", "public, max-age=31536000");
@@ -1394,7 +1008,7 @@ async function startServer() {
     }));
     app.get("*", (req, res) => {
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.sendFile(import_path2.default.join(distPath, "index.html"));
+      res.sendFile(import_path.default.join(distPath, "index.html"));
     });
   }
   app.listen(PORT, async () => {

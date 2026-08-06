@@ -5,22 +5,6 @@ import dotenv from "dotenv";
 dotenv.config();
 import { createServer as createViteServer } from "vite";
 import { getDbPool, isDbConnected, testDbConnectionDetailed } from "./src/db/mysql.ts";
-import { 
-  readJsonDb,
-  getJsonTeacherProfile, saveJsonTeacherProfile,
-  getJsonStudents, saveJsonStudent, deleteJsonStudent,
-  getJsonLessonPlans, saveJsonLessonPlan, saveJsonLessonPlanBulk, deleteJsonLessonPlan,
-  getJsonAttendance, saveJsonAttendance, saveJsonAttendanceBulk,
-  getJsonMaterials, saveJsonMaterial, saveJsonMaterialBulk, deleteJsonMaterial,
-  getJsonTasks, saveJsonTask, saveJsonTaskBulk, deleteJsonTask,
-  getJsonTaskSubmissions, saveJsonTaskSubmission, saveJsonTaskSubmissionBulk,
-  getJsonDevelopmentProgress, saveJsonDevelopmentProgress, saveJsonDevelopmentProgressBulk, deleteJsonDevelopmentProgress,
-  getJsonDisciplineLogs, saveJsonDisciplineLog, saveJsonDisciplineLogBulk, deleteJsonDisciplineLog,
-  getJsonExamGrades, saveJsonExamGrade, saveJsonExamGradesBulk,
-  getJsonSubjects, saveJsonSubjectsBulk,
-  getJsonClasses, saveJsonClassesBulk,
-  syncAllDataToJson, saveJsonStudentBulk
-} from "./src/db/jsonStore.ts";
 
 // Utilities for file storage
 function processBase64Photo(base64Str: string, id: string): string {
@@ -125,8 +109,8 @@ async function startServer() {
         res.json({
           status: "ok",
           database: "connected",
-          mode: "json_server",
-          message: "Server JSON Storage Aktif - Semua data tersimpan terpusat di server & dapat diakses antar-perangkat.",
+          mode: "error",
+          message: "MySQL disconnected.",
           mysqlError: testResult.error,
           config: {
             host: testResult.host,
@@ -139,8 +123,8 @@ async function startServer() {
       res.json({
         status: "ok",
         database: "connected",
-        mode: "json_server",
-        message: "Server JSON Storage Aktif - Semua data tersimpan terpusat di server.",
+        mode: "error",
+        message: "MySQL disconnected.",
         mysqlError: err.message || String(err)
       });
     }
@@ -149,14 +133,14 @@ async function startServer() {
   // Function to initialize MySQL tables automatically
   async function initDbTables() {
     if (!process.env.DB_HOST || !(process.env.DB_NAME || process.env.DB_DATABASE)) {
-      return { success: false, mode: "json_server" };
+      return { success: false, error: "MySQL not configured" };
     }
     const connected = await isDbConnected();
     if (!connected) {
-      return { success: false, mode: "json_server" };
+      return { success: false, error: "MySQL not configured" };
     }
     const pool = getDbPool();
-    if (!pool) return { success: false, mode: "json_server" };
+    if (!pool) return { success: false, error: "MySQL not configured" };
     try {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS teacher_profile (
@@ -371,12 +355,12 @@ async function startServer() {
     if (pool) {
       try {
         const [rows]: any = await pool.query("SELECT name, nip, school, subjectGroup, photoUrl FROM teacher_profile LIMIT 1");
-        if (rows && rows.length > 0) return res.json(rows[0]);
+        if (rows && rows.length > 0) return res.json(rows[0]); return res.json({});
       } catch (err) {
         // Fallback to JSON store silently if MySQL is offline or not created
       }
     }
-    res.json(getJsonTeacherProfile());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/teacher-profile", async (req, res) => {
@@ -384,7 +368,6 @@ async function startServer() {
     if (profile.photoUrl) {
       profile.photoUrl = processBase64Photo(profile.photoUrl, "teacher");
     }
-    saveJsonTeacherProfile(profile);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -411,17 +394,14 @@ async function startServer() {
     if (pool) {
       try {
         const [rows]: any = await pool.query("SELECT name FROM subjects");
-        if (rows && rows.length > 0) {
-          return res.json(rows.map((r: any) => r.name));
-        }
+        return res.json((rows || []).map((r: any) => r.name));
       } catch (err) {}
     }
-    return res.json(getJsonSubjects());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/subjects", async (req, res) => {
     const items = req.body;
-    saveJsonSubjectsBulk(items);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -441,17 +421,14 @@ async function startServer() {
     if (pool) {
       try {
         const [rows]: any = await pool.query("SELECT name FROM classes");
-        if (rows && rows.length > 0) {
-          return res.json(rows.map((r: any) => r.name));
-        }
+        return res.json((rows || []).map((r: any) => r.name));
       } catch (err) {}
     }
-    return res.json(getJsonClasses());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/classes", async (req, res) => {
     const items = req.body;
-    saveJsonClassesBulk(items);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -483,7 +460,7 @@ async function startServer() {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonStudents());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/students", async (req, res) => {
@@ -498,7 +475,6 @@ async function startServer() {
           s.photoUrl = processBase64Photo(s.photoUrl, s.id || "student");
         }
       }
-      saveJsonStudentBulk(items.filter(s => s && s.id));
     }
 
     if (pool) {
@@ -520,7 +496,6 @@ async function startServer() {
   });
 
   app.delete("/api/students/:id", async (req, res) => {
-    deleteJsonStudent(req.params.id);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -549,7 +524,7 @@ async function startServer() {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonLessonPlans());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/lesson-plans", async (req, res) => {
@@ -563,7 +538,6 @@ async function startServer() {
           lp.materialFile.dataUrl = await uploadToTelegram(lp.materialFile.dataUrl, lp.materialFile.name);
         }
       }
-      saveJsonLessonPlanBulk(items.filter(lp => lp && lp.id));
     }
 
     if (pool) {
@@ -589,7 +563,6 @@ async function startServer() {
   });
 
   app.delete("/api/lesson-plans/:id", async (req, res) => {
-    deleteJsonLessonPlan(req.params.id);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -607,17 +580,16 @@ async function startServer() {
     if (pool) {
       try {
         const [rows]: any = await pool.query("SELECT * FROM attendance");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonAttendance());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/attendance", async (req, res) => {
     const att = req.body;
-    saveJsonAttendance(att);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -637,7 +609,6 @@ async function startServer() {
   app.post("/api/attendance/bulk", async (req, res) => {
     const items: any[] = req.body;
     if (Array.isArray(items)) {
-      saveJsonAttendanceBulk(items);
       const pool = getDbPool();
       if (pool) {
         try {
@@ -672,7 +643,7 @@ async function startServer() {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonMaterials());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/materials", async (req, res) => {
@@ -683,7 +654,6 @@ async function startServer() {
           m.file.dataUrl = await uploadToTelegram(m.file.dataUrl, m.file.name);
         }
       }
-      saveJsonMaterialBulk(items.filter(m => m && m.id));
     }
 
     const pool = getDbPool();
@@ -705,7 +675,6 @@ async function startServer() {
   });
 
   app.delete("/api/materials/:id", async (req, res) => {
-    deleteJsonMaterial(req.params.id);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -723,17 +692,16 @@ async function startServer() {
     if (pool) {
       try {
         const [rows]: any = await pool.query("SELECT * FROM tasks");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonTasks());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/tasks", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonTaskBulk(items.filter(t => t && t.id));
 
     const pool = getDbPool();
     if (pool) {
@@ -754,7 +722,6 @@ async function startServer() {
   });
 
   app.delete("/api/tasks/:id", async (req, res) => {
-    deleteJsonTask(req.params.id);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -780,7 +747,7 @@ async function startServer() {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonTaskSubmissions());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/task-submissions", async (req, res) => {
@@ -791,7 +758,6 @@ async function startServer() {
           s.studentAnswerFile.dataUrl = await uploadToTelegram(s.studentAnswerFile.dataUrl, s.studentAnswerFile.name);
         }
       }
-      saveJsonTaskSubmissionBulk(items.filter(s => s && s.id));
     }
 
     const pool = getDbPool();
@@ -821,17 +787,16 @@ async function startServer() {
     if (pool) {
       try {
         const [rows]: any = await pool.query("SELECT * FROM development_progress");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonDevelopmentProgress());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/development-progress", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonDevelopmentProgressBulk(items.filter(p => p && p.id));
 
     const pool = getDbPool();
     if (pool) {
@@ -852,7 +817,6 @@ async function startServer() {
   });
 
   app.delete("/api/development-progress/:id", async (req, res) => {
-    deleteJsonDevelopmentProgress(req.params.id);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -868,17 +832,16 @@ async function startServer() {
     if (pool) {
       try {
         const [rows]: any = await pool.query("SELECT * FROM discipline_logs");
-        if (rows && rows.length > 0) return res.json(rows);
+        return res.json(rows || []);
       } catch (err) {
         // Fallback to JSON store
       }
     }
-    res.json(getJsonDisciplineLogs());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/discipline-logs", async (req, res) => {
     const items = Array.isArray(req.body) ? req.body : [req.body];
-    if (items.length > 0) saveJsonDisciplineLogBulk(items.filter(l => l && l.id));
 
     const pool = getDbPool();
     if (pool) {
@@ -899,7 +862,6 @@ async function startServer() {
   });
 
   app.delete("/api/discipline-logs/:id", async (req, res) => {
-    deleteJsonDisciplineLog(req.params.id);
     const pool = getDbPool();
     if (pool) {
       try {
@@ -911,15 +873,13 @@ async function startServer() {
 
   // --- EXAM GRADES ---
   app.get("/api/exam-grades", (req, res) => {
-    res.json(getJsonExamGrades());
+    return res.status(500).json({ error: "Database offline" });
   });
 
   app.post("/api/exam-grades", (req, res) => {
     const body = req.body;
     if (body.studentId) {
-      saveJsonExamGrade(body.studentId, body.uts, body.uas);
     } else if (typeof body === "object") {
-      saveJsonExamGradesBulk(body);
     }
     res.json({ success: true });
   });
@@ -987,14 +947,6 @@ async function startServer() {
   });
 
   // --- SYNC ALL DATA ENDPOINT ---
-  app.post("/api/sync-all", (req, res) => {
-    try {
-      const synced = syncAllDataToJson(req.body);
-      res.json({ success: true, data: synced });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
 
   // Catch-all for API routes so missing API calls return JSON 404 instead of index.html
   app.all("/api/*", (req, res) => {
