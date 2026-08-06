@@ -103,49 +103,17 @@ export default function App() {
   const [examGrades, setExamGrades] = useState<ExamGradesData>({});
 
   // --- SUBJECTS DATABASE STATE ---
-  const [subjects, setSubjects] = useState<string[]>(() => {
-    const saved = localStorage.getItem("rpl_subjects");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return ["Pemrograman Mobile", "Rekayasa Perangkat Lunak"];
-  });
+  const [subjects, setSubjects] = useState<string[]>(["Pemrograman Mobile", "Rekayasa Perangkat Lunak"]);
 
-  useEffect(() => {
-    localStorage.setItem("rpl_subjects", JSON.stringify(subjects));
-  }, [subjects]);
+  
 
   // --- CLASSES STATE ---
-  const [classes, setClasses] = useState<string[]>(() => {
-    const saved = localStorage.getItem("rpl_classes");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    const fromStudents = Array.from(new Set(INITIAL_STUDENTS.map(s => s.className))).sort();
-    return fromStudents.length > 0 ? fromStudents : ["XI RPL 1", "XI RPL 2", "XII RPL 1"];
-  });
+  const [classes, setClasses] = useState<string[]>(["XI RPL 1", "XI RPL 2", "XII RPL 1"]);
 
-  useEffect(() => {
-    localStorage.setItem("rpl_classes", JSON.stringify(classes));
-  }, [classes]);
+  
 
   // --- SAVE HOOKS / EVENTS ---
-  useEffect(() => { saveData("teacher_profile", teacherProfile); }, [teacherProfile]);
-  useEffect(() => { saveData("students", students); }, [students]);
-  useEffect(() => { saveData("lesson_plans", lessonPlans); }, [lessonPlans]);
-  useEffect(() => { saveData("attendance", attendance); }, [attendance]);
-  useEffect(() => { saveData("materials", materials); }, [materials]);
-  useEffect(() => { saveData("tasks", tasks); }, [tasks]);
-  useEffect(() => { saveData("task_submissions", submissions); }, [submissions]);
-  useEffect(() => { saveData("development_logs", developmentLogs); }, [developmentLogs]);
-  useEffect(() => { saveData("discipline_logs", disciplineLogs); }, [disciplineLogs]);
-  useEffect(() => { saveData("exam_grades", examGrades); }, [examGrades]);
-  useEffect(() => { saveData("user_accounts", users); }, [users]);
-  useEffect(() => { saveData("app_auth_session", authSession); }, [authSession]);
+                        useEffect(() => { saveData("app_auth_session", authSession); }, [authSession]);
 
 
 
