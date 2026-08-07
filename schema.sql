@@ -2,13 +2,13 @@
 -- Import file ini ke phpMyAdmin atau MySQL di cPanel / Arenhost
 
 CREATE TABLE IF NOT EXISTS `teacher_profile` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `id` INT AUTOINCREMENT PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `nip` VARCHAR(100) NOT NULL,
   `school` VARCHAR(255) NOT NULL,
   `subjectGroup` VARCHAR(255) NOT NULL,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 INSERT IGNORE INTO `teacher_profile` (`id`, `name`, `nip`, `school`, `subjectGroup`) 
 VALUES (1, 'Guru Pengampu', '19850101 201001 1 001', 'SMK Negeri 1 Cendrawasih', 'Pengembangan Perangkat Lunak & Gim (PPLG)');
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `students` (
   `className` VARCHAR(100) NOT NULL,
   `gender` ENUM('L', 'P') NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS `lesson_plans` (
   `id` VARCHAR(50) PRIMARY KEY,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `lesson_plans` (
   `taskMaxPoints` INT DEFAULT 100,
   `taskDeadline` VARCHAR(50) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS `attendance` (
   `id` VARCHAR(50) PRIMARY KEY,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `notes` TEXT NULL,
   `lessonPlanId` VARCHAR(50) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS `materials` (
   `id` VARCHAR(50) PRIMARY KEY,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `materials` (
   `createdAt` VARCHAR(50) NOT NULL,
   `file` LONGTEXT NULL,
   `created_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS `tasks` (
   `id` VARCHAR(50) PRIMARY KEY,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `createdAt` VARCHAR(50) NOT NULL,
   `lessonPlanId` VARCHAR(50) NULL,
   `created_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS `task_submissions` (
   `id` VARCHAR(50) PRIMARY KEY,
@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS `task_submissions` (
   `feedback` TEXT NULL,
   `studentAnswerText` TEXT NULL,
   `studentAnswerFile` LONGTEXT NULL,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS `development_progress` (
   `id` VARCHAR(50) PRIMARY KEY,
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `development_progress` (
   `status` ENUM('Perlu Bimbingan', 'Cukup', 'Baik', 'Sangat Baik') NOT NULL,
   `notes` TEXT NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE IF NOT EXISTS `discipline_logs` (
   `id` VARCHAR(50) PRIMARY KEY,
@@ -110,4 +110,4 @@ CREATE TABLE IF NOT EXISTS `discipline_logs` (
   `actionTaken` TEXT NULL,
   `notes` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);

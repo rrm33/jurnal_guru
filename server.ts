@@ -38,7 +38,7 @@ if (!envLoaded) {
   dotenv.config();
 }
 import { createServer as createViteServer } from "vite";
-import { getDbPool, isDbConnected, testDbConnectionDetailed } from "./src/db/mysql.ts";
+import { getDbPool, isDbConnected, testDbConnectionDetailed, initDb } from "./src/db/sqlite.ts";
 
 // Utilities for file storage
 function processBase64Photo(base64Str: string, id: string): string {
@@ -166,6 +166,8 @@ async function startServer() {
 
   // Function to initialize MySQL tables automatically
   async function initDbTables() {
+  await initDb();
+
     if (!process.env.DB_HOST || !(process.env.DB_NAME || process.env.DB_DATABASE)) {
       return { success: false, error: "MySQL not configured" };
     }
@@ -178,13 +180,13 @@ async function startServer() {
     try {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS teacher_profile (
-          id INT AUTO_INCREMENT PRIMARY KEY,
+          id INT AUTOINCREMENT PRIMARY KEY,
           name VARCHAR(100) NOT NULL,
           nip VARCHAR(50) NULL,
           school VARCHAR(100) NULL,
           subjectGroup VARCHAR(100) NULL,
           photoUrl LONGTEXT NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       try {
@@ -204,7 +206,7 @@ async function startServer() {
           whatsapp VARCHAR(20) NULL,
           password TEXT NULL,
           hasChangedPassword TINYINT(1) DEFAULT 0
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       try { await pool.query("ALTER TABLE students ADD COLUMN photoUrl LONGTEXT NULL"); } catch (e) {}
@@ -230,7 +232,7 @@ async function startServer() {
           taskDescription TEXT NULL,
           taskMaxPoints INT DEFAULT 100,
           taskDeadline VARCHAR(50) NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
@@ -242,7 +244,7 @@ async function startServer() {
           status ENUM('Hadir', 'Sakit', 'Izin', 'Alpa') NOT NULL,
           notes TEXT NULL,
           lessonPlanId VARCHAR(50) NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
@@ -255,7 +257,7 @@ async function startServer() {
           category ENUM('Teori', 'Praktikum', 'Referensi') NOT NULL,
           createdAt VARCHAR(50) NOT NULL,
           file LONGTEXT NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
@@ -268,7 +270,7 @@ async function startServer() {
           deadline VARCHAR(50) NOT NULL,
           createdAt VARCHAR(50) NOT NULL,
           lessonPlanId VARCHAR(50) NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
@@ -282,7 +284,7 @@ async function startServer() {
           feedback TEXT NULL,
           studentAnswerText TEXT NULL,
           studentAnswerFile LONGTEXT NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
@@ -293,7 +295,7 @@ async function startServer() {
           aspect VARCHAR(255) NOT NULL,
           status ENUM('Perlu Bimbingan', 'Cukup', 'Baik', 'Sangat Baik') NOT NULL,
           notes TEXT NOT NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
@@ -306,19 +308,19 @@ async function startServer() {
           points INT NOT NULL,
           actionTaken TEXT NULL,
           notes TEXT NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS subjects (
           name VARCHAR(255) PRIMARY KEY
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS classes (
           name VARCHAR(255) PRIMARY KEY
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       await pool.query(`
@@ -328,7 +330,7 @@ async function startServer() {
           isi LONGTEXT,
           gambar LONGTEXT,
           createdAt VARCHAR(100)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        );
       `);
 
       // Seed subjects and classes if empty
